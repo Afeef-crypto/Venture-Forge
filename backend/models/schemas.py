@@ -88,7 +88,6 @@ class EvaluationReport(BaseModel):
     scores: ScoreBreakdown = Field(default_factory=ScoreBreakdown)
     radar_scores: RadarScores = Field(default_factory=RadarScores)
     demand_validation: DemandValidation = Field(default_factory=DemandValidation)
-    hackathon_tips: list[str] = Field(default_factory=list)
     mvp_roadmap: list[MvpRoadmapWeek] = Field(default_factory=list)
     pivot_suggestions: list[PivotSuggestion] = Field(default_factory=list)
     domain_tasks: DomainTasks = Field(default_factory=DomainTasks)
@@ -126,3 +125,9 @@ class UploadResponse(BaseModel):
     stored_name: str
     size_bytes: int
     content_type: str | None = None
+    extracted_text: str | None = None
+    workspace_path: str | None = None
+
+
+class WorkspaceFileRequest(BaseModel):
+    path: str = Field(..., min_length=3, max_length=2000)

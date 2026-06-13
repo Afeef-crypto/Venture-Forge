@@ -81,7 +81,6 @@ Respond ONLY in valid JSON with this EvaluationReport schema:
     "pain_point_severity": string (how acute is the problem?),
     "willingness_to_pay": string (will customers pay, and how much?)
   }},
-  "hackathon_tips": string[] (4-6 tips),
   "mvp_roadmap": [{{ "week": number, "title": string, "deliverable": string, "tasks": string[] }}] (exactly 3 weeks),
   "pivot_suggestions": [{{ "title": string, "rationale": string }}],
   "domain_tasks": {{
@@ -218,7 +217,6 @@ def normalize_report(parsed: dict, results: list[AgentResult]) -> EvaluationRepo
         scores=scores,
         radar_scores=radar,
         demand_validation=demand_validation,
-        hackathon_tips=list(parsed.get("hackathon_tips") or []),
         mvp_roadmap=mvp_roadmap,
         pivot_suggestions=pivot_suggestions,
         domain_tasks=domain_tasks,
@@ -266,11 +264,6 @@ def fallback_report(idea: str, results: list[AgentResult]) -> EvaluationReport:
                 getattr(dem, "willingness_to_pay", None) or "Unavailable — retry synthesis."
             ),
         ),
-        hackathon_tips=[
-            "Focus on a clear demo",
-            "Show live agent evaluation",
-            "Highlight your unique insight",
-        ],
     )
 
 

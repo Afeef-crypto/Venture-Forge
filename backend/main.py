@@ -19,11 +19,13 @@ from models.schemas import (
     ExportMarkdownRequest,
     ExportMarkdownResponse,
     UploadResponse,
+    WorkspaceFileRequest,
 )
 from utils.export_paths import build_editor_urls
 from utils.file_handler import save_upload
 from utils.idea_validation import classify_idea
 from utils.non_idea_response import build_non_idea_agent_results, build_non_idea_report
+from utils.workspace_file import read_workspace_pitch_file
 
 app = FastAPI(
     title="Osiris API",
@@ -132,6 +134,22 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:
         stored_name=str(metadata["stored_name"]),
         size_bytes=int(metadata["size_bytes"]),
         content_type=str(metadata["content_type"]) if metadata["content_type"] else None,
+        extracted_text=str(metadata["extracted_text"]) if metadata.get("extracted_text") else None,
+    )
+
+
+@app.post("/api/upload/workspace", response_model=UploadResponse)
+async def upload_workspace_file(body: WorkspaceFileRequest) -> UploadResponse:
+    """Load a text pitch file by local path (for editor/Explorer drag that only provides paths)."""
+    metadata = read_workspace_pitch_file(body.path)
+    return UploadResponse(
+        success=True,
+        original_name=str(metadata["original_name"]),
+        stored_name=str(metadata["stored_name"]),
+        size_bytes=int(metadata["size_bytes"]),
+        content_type=str(metadata["content_type"]) if metadata.get("content_type") else None,
+        extracted_text=str(metadata["extracted_text"]) if metadata.get("extracted_text") else None,
+        workspace_path=str(metadata["workspace_path"]) if metadata.get("workspace_path") else None,
     )
 
 

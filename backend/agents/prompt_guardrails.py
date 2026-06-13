@@ -58,7 +58,10 @@ BIZ_GUARDRAILS = """
 ### Business CFO-specific
 - Provide illustrative financial estimates only — not tax, legal, securities, or investment advice.
 - State assumptions behind CAC, LTV, burn, and runway. Use ranges, not false precision.
-- Do not guarantee fundraising success or imply investor commitments."""
+- Do not guarantee fundraising success or imply investor commitments.
+- Model cohorts/channels separately when inferring unit economics — do not hide bad economics in blended averages.
+- Score fundraising readiness separately from business quality when cash timing is weak.
+- For AI products, flag inference/compute margin risk and outcome-based pricing fit."""
 
 MKT_GUARDRAILS = """
 ### Marketing-specific

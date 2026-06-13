@@ -84,11 +84,6 @@ def build_non_idea_report(idea: str, classification: IdeaClassification) -> Eval
             pain_point_severity="N/A — no product or customer problem described.",
             willingness_to_pay="N/A — no market or offer to assess.",
         ),
-        hackathon_tips=[
-            "Lead with the problem and who feels it",
-            "State your product in one sentence",
-            "Add how you make money or create value",
-        ],
         pivot_suggestions=[],
         cursor_tasks=[],
     )

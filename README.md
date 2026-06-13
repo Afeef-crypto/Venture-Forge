@@ -1,6 +1,6 @@
 # Osiris
 
-**Multi-agent startup idea evaluator** — five specialist AI agents score your MVP in parallel, then a sixth agent synthesizes an investor-ready report with roadmap, hackathon tips, and Cursor-ready tasks.
+**Multi-agent startup idea evaluator** — five specialist AI agents score your MVP in parallel, then a sixth agent synthesizes an investor-ready report with roadmap and Cursor-ready tasks.
 
 **Repository:** [github.com/Afeef-crypto/Start-it](https://github.com/Afeef-crypto/Start-it)
 
