@@ -1,0 +1,4 @@
+export function ScoreRing({ score = 87, size = "lg" }: { score?: number; size?: "sm" | "lg" }) {
+  const r = 38, circumference = 2 * Math.PI * r;
+  return <div className={size === "lg" ? "relative h-28 w-28" : "relative h-16 w-16"}><svg className="h-full w-full -rotate-90" viewBox="0 0 100 100"><circle cx="50" cy="50" r={r} fill="none" stroke="currentColor" strokeWidth="6" className="text-muted"/><circle cx="50" cy="50" r={r} fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" className="text-primary transition-all duration-1000" strokeDasharray={circumference} strokeDashoffset={circumference * (1-score/100)}/></svg><span className="absolute inset-0 grid place-items-center font-display text-2xl font-semibold">{score}</span></div>;
+}
