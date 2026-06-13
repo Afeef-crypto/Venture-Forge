@@ -59,4 +59,3 @@ def test_fallback_report_includes_osiris_fields():
     assert report.osiris_score == derive_osiris_score(report.scores)
     assert report.osiris_verdict == score_to_osiris_verdict(report.osiris_score)
     assert report.radar_scores.tech == 50.0
-    assert len(report.hackathon_tips) >= 3

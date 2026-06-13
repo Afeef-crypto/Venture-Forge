@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import httpx
 
+from agents.prompt_guardrails import JUDGE_GUARDRAILS, compose_prompt
 from agents.openrouter import call_openrouter_once
 from models.schemas import (
     CursorTask,
@@ -29,13 +30,17 @@ SYNTHESIS_FALLBACK_MODELS = (
 )
 MAX_RETRIES = 1
 
-SYNTHESIS_SYSTEM_PROMPT = (
-    "You are The Judge — Osiris's final arbiter. You synthesize specialist findings "
-    "into one authoritative verdict. Output only valid JSON matching the EvaluationReport "
-    "schema. You MUST always include a cursor_tasks array with at least 8 tasks spanning "
-    "frontend, backend, ai_ml, design, marketing, and business domains. Each task needs "
-    "a unique id (e.g. FE-001), acceptance_criteria, priority, and sprint number."
+_JUDGE_CORE_PROMPT = (
+    "You are The Judge — Osiris's final arbiter. Five specialist evaluators submitted findings. "
+    "Synthesize into one authoritative Osiris Evaluation Report. Resolve conflicts, weight evidence, "
+    "issue a memorable judge_verdict, and produce an actionable build plan. "
+    "Compute osiris_score (0-100) and map to osiris_verdict: Divine Potential (90-100), "
+    "Venture Ready (75-89), Promising but Risky (60-74), Needs Refinement (40-59), Reconsider (<40). "
+    "Populate radar_scores (market, demand, tech, finance, execution), demand_validation, "
+    "and minimum 8 cursor_tasks across all domains."
 )
+
+SYNTHESIS_SYSTEM_PROMPT = compose_prompt(_JUDGE_CORE_PROMPT, JUDGE_GUARDRAILS)
 
 
 def build_synthesis_prompt(idea: str, results: list[AgentResult]) -> str:
@@ -76,7 +81,6 @@ Respond ONLY in valid JSON with this EvaluationReport schema:
     "pain_point_severity": string (how acute is the problem?),
     "willingness_to_pay": string (will customers pay, and how much?)
   }},
-  "hackathon_tips": string[] (4-6 tips),
   "mvp_roadmap": [{{ "week": number, "title": string, "deliverable": string, "tasks": string[] }}] (exactly 3 weeks),
   "pivot_suggestions": [{{ "title": string, "rationale": string }}],
   "domain_tasks": {{
@@ -213,7 +217,6 @@ def normalize_report(parsed: dict, results: list[AgentResult]) -> EvaluationRepo
         scores=scores,
         radar_scores=radar,
         demand_validation=demand_validation,
-        hackathon_tips=list(parsed.get("hackathon_tips") or []),
         mvp_roadmap=mvp_roadmap,
         pivot_suggestions=pivot_suggestions,
         domain_tasks=domain_tasks,
@@ -261,11 +264,6 @@ def fallback_report(idea: str, results: list[AgentResult]) -> EvaluationReport:
                 getattr(dem, "willingness_to_pay", None) or "Unavailable — retry synthesis."
             ),
         ),
-        hackathon_tips=[
-            "Focus on a clear demo",
-            "Show live agent evaluation",
-            "Highlight your unique insight",
-        ],
     )
 
 

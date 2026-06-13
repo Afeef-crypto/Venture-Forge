@@ -5,7 +5,7 @@ import json
 import time
 from collections import defaultdict
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -13,10 +13,19 @@ from agents.agent_config import AGENTS
 from agents.orchestrator import run_all_agents
 from agents.synthesis import run_synthesis
 from config import settings
-from models.schemas import EvaluateRequest, EvaluateResponse
-from fastapi import UploadFile, File
+from models.schemas import (
+    EvaluateRequest,
+    EvaluateResponse,
+    ExportMarkdownRequest,
+    ExportMarkdownResponse,
+    UploadResponse,
+    WorkspaceFileRequest,
+)
+from utils.export_paths import build_editor_urls
 from utils.file_handler import save_upload
-from models.schemas import UploadResponse
+from utils.idea_validation import classify_idea
+from utils.non_idea_response import build_non_idea_agent_results, build_non_idea_report
+from utils.workspace_file import read_workspace_pitch_file
 
 app = FastAPI(
     title="Osiris API",
@@ -82,10 +91,66 @@ async def evaluate(request: Request, body: EvaluateRequest) -> EvaluateResponse:
     _record_evaluation(request)
 
     idea = body.idea.strip()
+    classification = classify_idea(idea)
+    if not classification.is_evaluable:
+        return EvaluateResponse(
+            agent_results=build_non_idea_agent_results(classification),
+            report=build_non_idea_report(idea, classification),
+        )
+
     agent_results = await run_all_agents(idea)
     report = await run_synthesis(idea, agent_results)
 
     return EvaluateResponse(agent_results=agent_results, report=report)
+
+
+@app.post("/api/export/markdown", response_model=ExportMarkdownResponse)
+async def export_markdown(body: ExportMarkdownRequest) -> ExportMarkdownResponse:
+    export_dir = settings.export_path
+    export_dir.mkdir(parents=True, exist_ok=True)
+    target = (export_dir / body.filename).resolve()
+    export_root = export_dir.resolve()
+
+    try:
+        target.relative_to(export_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid export filename") from exc
+
+    target.write_text(body.content, encoding="utf-8")
+
+    return ExportMarkdownResponse(
+        path=str(target),
+        filename=body.filename,
+        editor_urls=build_editor_urls(target),
+    )
+
+
+@app.post("/api/upload", response_model=UploadResponse)
+async def upload_file(file: UploadFile = File(...)) -> UploadResponse:
+    metadata = await save_upload(file)
+    return UploadResponse(
+        success=True,
+        original_name=str(metadata["original_name"]),
+        stored_name=str(metadata["stored_name"]),
+        size_bytes=int(metadata["size_bytes"]),
+        content_type=str(metadata["content_type"]) if metadata["content_type"] else None,
+        extracted_text=str(metadata["extracted_text"]) if metadata.get("extracted_text") else None,
+    )
+
+
+@app.post("/api/upload/workspace", response_model=UploadResponse)
+async def upload_workspace_file(body: WorkspaceFileRequest) -> UploadResponse:
+    """Load a text pitch file by local path (for editor/Explorer drag that only provides paths)."""
+    metadata = read_workspace_pitch_file(body.path)
+    return UploadResponse(
+        success=True,
+        original_name=str(metadata["original_name"]),
+        stored_name=str(metadata["stored_name"]),
+        size_bytes=int(metadata["size_bytes"]),
+        content_type=str(metadata["content_type"]) if metadata.get("content_type") else None,
+        extracted_text=str(metadata["extracted_text"]) if metadata.get("extracted_text") else None,
+        workspace_path=str(metadata["workspace_path"]) if metadata.get("workspace_path") else None,
+    )
 
 
 @app.post("/api/evaluate/stream")
@@ -94,6 +159,7 @@ async def evaluate_stream(request: Request, body: EvaluateRequest):
     _record_evaluation(request)
 
     idea = body.idea.strip()
+    classification = classify_idea(idea)
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
 
     async def on_agent_complete(index: int, result) -> None:
@@ -109,6 +175,14 @@ async def evaluate_stream(request: Request, body: EvaluateRequest):
 
     async def run_pipeline() -> None:
         try:
+            if not classification.is_evaluable:
+                agent_results = build_non_idea_agent_results(classification)
+                for index, result in enumerate(agent_results):
+                    await on_agent_complete(index, result)
+                report = build_non_idea_report(idea, classification)
+                await queue.put({"event": "synthesis_complete", "report": report.model_dump()})
+                return
+
             agent_results = await run_all_agents(idea, on_agent_complete)
             report = await run_synthesis(idea, agent_results)
             await queue.put({"event": "synthesis_complete", "report": report.model_dump()})
@@ -135,15 +209,4 @@ async def evaluate_stream(request: Request, body: EvaluateRequest):
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
-    )
-@app.post("/api/upload", response_model=UploadResponse)
-async def upload_file(file: UploadFile = File(...)):
-    metadata = await save_upload(file)
-
-    return UploadResponse(
-        success=True,
-        original_name=metadata["original_name"],
-        stored_name=metadata["stored_name"],
-        size_bytes=metadata["size_bytes"],
-        content_type=metadata["content_type"]
     )

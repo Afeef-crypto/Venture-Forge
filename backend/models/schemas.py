@@ -88,7 +88,6 @@ class EvaluationReport(BaseModel):
     scores: ScoreBreakdown = Field(default_factory=ScoreBreakdown)
     radar_scores: RadarScores = Field(default_factory=RadarScores)
     demand_validation: DemandValidation = Field(default_factory=DemandValidation)
-    hackathon_tips: list[str] = Field(default_factory=list)
     mvp_roadmap: list[MvpRoadmapWeek] = Field(default_factory=list)
     pivot_suggestions: list[PivotSuggestion] = Field(default_factory=list)
     domain_tasks: DomainTasks = Field(default_factory=DomainTasks)
@@ -107,9 +106,28 @@ class EvaluateResponse(BaseModel):
 class RateLimitError(BaseModel):
     detail: str
     retry_after_seconds: int
+
+
+class ExportMarkdownRequest(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500_000)
+    filename: str = Field(default="osiris-report.md", pattern=r"^[\w\-. ]+\.md$")
+
+
+class ExportMarkdownResponse(BaseModel):
+    path: str
+    filename: str
+    editor_urls: dict[str, str]
+
+
 class UploadResponse(BaseModel):
     success: bool = True
     original_name: str
     stored_name: str
     size_bytes: int
     content_type: str | None = None
+    extracted_text: str | None = None
+    workspace_path: str | None = None
+
+
+class WorkspaceFileRequest(BaseModel):
+    path: str = Field(..., min_length=3, max_length=2000)
