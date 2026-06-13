@@ -14,6 +14,9 @@ from agents.orchestrator import run_all_agents
 from agents.synthesis import run_synthesis
 from config import settings
 from models.schemas import EvaluateRequest, EvaluateResponse
+from fastapi import UploadFile, File
+from utils.file_handler import save_upload
+from models.schemas import UploadResponse
 
 app = FastAPI(
     title="Osiris API",
@@ -132,4 +135,15 @@ async def evaluate_stream(request: Request, body: EvaluateRequest):
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
+    )
+@app.post("/api/upload", response_model=UploadResponse)
+async def upload_file(file: UploadFile = File(...)):
+    metadata = await save_upload(file)
+
+    return UploadResponse(
+        success=True,
+        original_name=metadata["original_name"],
+        stored_name=metadata["stored_name"],
+        size_bytes=metadata["size_bytes"],
+        content_type=metadata["content_type"]
     )

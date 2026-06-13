@@ -107,3 +107,9 @@ class EvaluateResponse(BaseModel):
 class RateLimitError(BaseModel):
     detail: str
     retry_after_seconds: int
+class UploadResponse(BaseModel):
+    success: bool = True
+    original_name: str
+    stored_name: str
+    size_bytes: int
+    content_type: str | None = None
