@@ -2,6 +2,9 @@ import re
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+UPLOAD_DIR = "uploads"
+MAX_UPLOAD_SIZE_MB = 20
+
 AGENT_KEY_IDS = ("yc", "tech", "biz", "mkt", "dem")
 SYNTHESIS_KEY_ID = "synthesis"
 
