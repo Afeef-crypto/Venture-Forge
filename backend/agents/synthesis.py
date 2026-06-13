@@ -5,12 +5,19 @@ import httpx
 from agents.openrouter import call_openrouter_once
 from models.schemas import (
     CursorTask,
+    DemandValidation,
     DomainTasks,
     EvaluationReport,
     MvpRoadmapWeek,
     PivotSuggestion,
+    RadarScores,
     ScoreBreakdown,
     AgentResult,
+)
+from utils.osiris_verdict import (
+    derive_osiris_score,
+    derive_radar_scores,
+    score_to_osiris_verdict,
 )
 from utils.parse_json import parse_json
 
@@ -23,38 +30,52 @@ SYNTHESIS_FALLBACK_MODELS = (
 MAX_RETRIES = 1
 
 SYNTHESIS_SYSTEM_PROMPT = (
-    "You are a startup evaluation synthesis engine. Output only valid JSON matching "
-    "the EvaluationReport schema. You MUST always include a cursor_tasks array with "
-    "at least 8 tasks spanning frontend, backend, ai_ml, design, marketing, and business "
-    "domains. Each task needs a unique id (e.g. FE-001), acceptance_criteria, priority, "
-    "and sprint number."
+    "You are The Judge — Osiris's final arbiter. You synthesize specialist findings "
+    "into one authoritative verdict. Output only valid JSON matching the EvaluationReport "
+    "schema. You MUST always include a cursor_tasks array with at least 8 tasks spanning "
+    "frontend, backend, ai_ml, design, marketing, and business domains. Each task needs "
+    "a unique id (e.g. FE-001), acceptance_criteria, priority, and sprint number."
 )
 
 
 def build_synthesis_prompt(idea: str, results: list[AgentResult]) -> str:
     yc, tech, biz, mkt, dem = results
 
-    return f"""You are a senior venture advisor. You have received evaluations from 5 specialist agents.
-Synthesize them into a complete Evaluation Report.
+    return f"""You are The Judge — Osiris's final arbiter. Five specialist evaluators have submitted findings.
+Synthesize them into one authoritative Osiris Evaluation Report.
 
 Original Idea: "{idea}"
 
-YC Agent ({yc.score}/10): {yc.model_dump_json()}
-Tech Agent ({tech.score}/10): {tech.model_dump_json()}
-Business Agent ({biz.score}/10): {biz.model_dump_json()}
-Marketing Agent ({mkt.score}/10): {mkt.model_dump_json()}
-Demand Agent ({dem.score}/10): {dem.model_dump_json()}
+YC Evaluator ({yc.score}/10): {yc.model_dump_json()}
+Tech Auditor ({tech.score}/10): {tech.model_dump_json()}
+Business CFO ({biz.score}/10): {biz.model_dump_json()}
+Marketing ({mkt.score}/10): {mkt.model_dump_json()}
+Demand Intel ({dem.score}/10): {dem.model_dump_json()}
 
 Respond ONLY in valid JSON with this EvaluationReport schema:
 {{
   "overall_score": number (weighted average 1-10),
   "overall_verdict": string ("strong-yes" | "yes" | "maybe" | "no"),
+  "osiris_score": number (0-100 composite venture score),
+  "osiris_verdict": string — MUST be one of: "Divine Potential" (90-100), "Venture Ready" (75-89), "Promising but Risky" (60-74), "Needs Refinement" (40-59), "Reconsider" (<40),
   "executive_summary": string (4-5 sentences),
   "investor_hook": string (one punchy line),
   "biggest_strength": string,
   "critical_risk": string,
   "final_verdict": string,
+  "judge_verdict": string (2-3 sentences — The Judge's memorable final ruling),
   "scores": {{ "yc": number, "tech": number, "biz": number, "mkt": number, "demand": number }},
+  "radar_scores": {{
+    "market": number (0-100),
+    "demand": number (0-100),
+    "tech": number (0-100),
+    "finance": number (0-100),
+    "execution": number (0-100)
+  }},
+  "demand_validation": {{
+    "pain_point_severity": string (how acute is the problem?),
+    "willingness_to_pay": string (will customers pay, and how much?)
+  }},
   "hackathon_tips": string[] (4-6 tips),
   "mvp_roadmap": [{{ "week": number, "title": string, "deliverable": string, "tasks": string[] }}] (exactly 3 weeks),
   "pivot_suggestions": [{{ "title": string, "rationale": string }}],
@@ -139,17 +160,59 @@ def normalize_report(parsed: dict, results: list[AgentResult]) -> EvaluationRepo
 
     overall_verdict = str(parsed.get("overall_verdict") or "maybe")
 
+    radar_raw = parsed.get("radar_scores") or {}
+    derived_radar = derive_radar_scores(scores)
+    radar = RadarScores(
+        market=float(radar_raw.get("market") or derived_radar.market),
+        demand=float(radar_raw.get("demand") or derived_radar.demand),
+        tech=float(radar_raw.get("tech") or derived_radar.tech),
+        finance=float(radar_raw.get("finance") or derived_radar.finance),
+        execution=float(radar_raw.get("execution") or derived_radar.execution),
+    )
+
+    osiris_score = parsed.get("osiris_score")
+    if not isinstance(osiris_score, (int, float)):
+        osiris_score = derive_osiris_score(scores, radar)
+
+    osiris_verdict = str(parsed.get("osiris_verdict") or score_to_osiris_verdict(float(osiris_score)))
+
+    demand_raw = parsed.get("demand_validation") or {}
+    dem_result = results[4] if len(results) > 4 else None
+    demand_validation = DemandValidation(
+        pain_point_severity=str(
+            demand_raw.get("pain_point_severity")
+            or (getattr(dem_result, "pain_severity", None) if dem_result else None)
+            or "See demand evaluation for details."
+        ),
+        willingness_to_pay=str(
+            demand_raw.get("willingness_to_pay")
+            or (getattr(dem_result, "willingness_to_pay", None) if dem_result else None)
+            or "Customer payment intent requires validation."
+        ),
+    )
+
+    judge_verdict = str(
+        parsed.get("judge_verdict")
+        or parsed.get("final_verdict")
+        or overall_verdict
+    )
+
     return EvaluationReport(
         overall_score=round(float(overall), 1),
         overall_verdict=overall_verdict,
+        osiris_score=round(float(osiris_score), 1),
+        osiris_verdict=osiris_verdict,
         executive_summary=str(parsed.get("executive_summary") or "Evaluation complete."),
         investor_hook=str(
             parsed.get("investor_hook") or "A compelling startup opportunity awaits refinement."
         ),
         biggest_strength=str(parsed.get("biggest_strength") or "Strong foundational concept."),
         critical_risk=str(parsed.get("critical_risk") or "Market validation needed."),
-        final_verdict=str(parsed.get("final_verdict") or overall_verdict),
+        final_verdict=str(parsed.get("final_verdict") or judge_verdict),
+        judge_verdict=judge_verdict,
         scores=scores,
+        radar_scores=radar,
+        demand_validation=demand_validation,
         hackathon_tips=list(parsed.get("hackathon_tips") or []),
         mvp_roadmap=mvp_roadmap,
         pivot_suggestions=pivot_suggestions,
@@ -168,10 +231,16 @@ def fallback_report(idea: str, results: list[AgentResult]) -> EvaluationReport:
     )
     avg = (scores.yc + scores.tech + scores.biz + scores.mkt + scores.demand) / 5
     verdict = "yes" if avg >= 7 else "maybe" if avg >= 5 else "no"
+    radar = derive_radar_scores(scores)
+    osiris_score = derive_osiris_score(scores, radar)
+    osiris_verdict = score_to_osiris_verdict(osiris_score)
+    dem = results[4] if len(results) > 4 else None
 
     return EvaluationReport(
         overall_score=round(avg, 1),
         overall_verdict=verdict,
+        osiris_score=osiris_score,
+        osiris_verdict=osiris_verdict,
         executive_summary=(
             f'Synthesis agent failed to generate a full report for "{idea[:80]}...". '
             "Individual agent scores are available below."
@@ -180,7 +249,18 @@ def fallback_report(idea: str, results: list[AgentResult]) -> EvaluationReport:
         biggest_strength=str(results[0].summary if results else "See individual agent cards."),
         critical_risk="Synthesis report generation failed — review agent outputs manually.",
         final_verdict=verdict,
+        judge_verdict=(
+            f"The Judge could not reach a full ruling. Preliminary Osiris score: {osiris_score}/100 "
+            f"— {osiris_verdict}."
+        ),
         scores=scores,
+        radar_scores=radar,
+        demand_validation=DemandValidation(
+            pain_point_severity=str(getattr(dem, "pain_severity", None) or "Unavailable — retry synthesis."),
+            willingness_to_pay=str(
+                getattr(dem, "willingness_to_pay", None) or "Unavailable — retry synthesis."
+            ),
+        ),
         hackathon_tips=[
             "Focus on a clear demo",
             "Show live agent evaluation",

@@ -73,23 +73,72 @@ Each evaluator has **fallback models** (e.g. `gpt-4o-mini`, `nemotron-free`). If
 ```
 .
 ├── backend/
-│   ├── main.py              # FastAPI routes + SSE streaming
-│   ├── config.py            # Settings + per-agent API keys
+│   ├── main.py                 # FastAPI routes + SSE streaming
+│   ├── config.py               # Settings + per-agent API keys
 │   ├── agents/
-│   │   ├── agent_config.py  # Prompts, models, fallbacks
-│   │   ├── openrouter.py    # Async OpenRouter client
-│   │   ├── orchestrator.py  # Parallel dispatch
-│   │   └── synthesis.py     # Report orchestrator
-│   ├── models/schemas.py    # Pydantic types
-│   ├── tests/               # pytest suite
-│   └── requirements.txt
+│   │   ├── agent_config.py     # Council prompts, models, fallbacks
+│   │   ├── openrouter.py       # Async OpenRouter client + retry chain
+│   │   ├── orchestrator.py     # asyncio.gather — 5 parallel evaluators
+│   │   └── synthesis.py        # ⚖️ The Judge — merges report + Osiris verdict
+│   ├── models/
+│   │   └── schemas.py          # Pydantic types (EvaluationReport, RadarScores…)
+│   ├── utils/
+│   │   ├── osiris_verdict.py   # Verdict tiers + radar score derivation
+│   │   └── parse_json.py       # LLM JSON extraction
+│   ├── scripts/                # OpenRouter smoke tests (live keys required)
+│   │   ├── test_call_agent.py
+│   │   ├── test_models.py
+│   │   ├── test_free_models.py
+│   │   └── test_keys_per_agent.py
+│   ├── tests/                  # pytest suite
+│   │   ├── test_api.py
+│   │   ├── test_config.py
+│   │   ├── test_orchestrator.py
+│   │   └── test_synthesis.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── pytest.ini
+│   └── .env.example
+│
 ├── frontend/
 │   ├── src/
-│   │   ├── api/evaluate.ts  # SSE client → backend
-│   │   ├── App.tsx          # Main UI flow
-│   │   └── components/      # AgentCard, ReportPanel, ExportBar…
-│   └── vite.config.ts       # Proxies /api → :8000 in dev
-├── docker-compose.yml
+│   │   ├── api/
+│   │   │   └── evaluate.ts     # SSE client → backend
+│   │   ├── config/
+│   │   │   └── agents.ts         # Council evaluator UI metadata
+│   │   ├── components/
+│   │   │   ├── AgentCard/        # Per-evaluator result cards
+│   │   │   ├── AgentStatusBar/   # Live SSE status pills
+│   │   │   ├── DemandValidation/ # Pain severity + willingness to pay
+│   │   │   ├── ExportBar/        # Markdown, open-in-editor, PDF, hook
+│   │   │   ├── IdeaInput/        # Idea textarea + demo presets
+│   │   │   ├── ReportPanel/      # ⚖️ The Judge + roadmap + cursor tasks
+│   │   │   ├── ScoreSummary/     # Council score overview
+│   │   │   └── VentureRadar/     # 5-axis venture spider chart
+│   │   ├── utils/
+│   │   │   ├── exportMarkdown.ts # Report → .md builder
+│   │   │   ├── openInEditor.ts   # Cursor / VS Code / Windsurf export
+│   │   │   ├── osirisVerdict.ts  # Divine Potential → Reconsider tiers
+│   │   │   ├── radarScores.ts    # Market · Demand · Tech · Finance · Execution
+│   │   │   └── scoreColor.ts
+│   │   ├── types/index.ts
+│   │   ├── styles/globals.css
+│   │   └── App.tsx               # Main evaluation flow
+│   ├── index.html
+│   ├── vite.config.ts            # Dev proxy /api → :8000
+│   ├── vercel.json
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── package.json
+│   └── .env.example
+│
+├── .cursor/
+│   └── tasks/
+│       └── sprints.md            # Sprint tracker
+│
+├── docker-compose.yml            # Backend :8000 + frontend :5173
+├── .env.example                  # Root env reference
+├── .gitignore
 └── README.md
 ```
 

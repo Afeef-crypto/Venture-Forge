@@ -43,21 +43,18 @@ Full-stack build at repo root (`backend/` + `frontend/`).
 | OPS-001 | Dockerfiles + docker-compose | Done |
 | OPS-002 | README + .env.example | Done |
 
-## Sprint 4 — Founder & GitHub Context
+## Sprint 4 — Osiris Verdict Experience
 
-Evaluate ideas in light of **who is building them** — founder profiles (skills, experience, past wins) and GitHub profiles (repos, languages, shipped projects) feed every agent so scores reflect **founder–market fit** and **team–idea alignment**, not just the idea in isolation.
+Replace generic agent listing with a memorable **Judge + Verdict** experience — radar chart, demand validation, tiered Osiris scores, and editor export.
 
 | ID | Title | Status |
 |---|---|---|
-| FP-001 | `FounderProfile` schema — name, bio, skills[], years_experience, accomplishments[] | Todo |
-| FP-002 | `EvaluateRequest` — optional `founders: FounderProfile[]` + `github_urls: string[]` | Todo |
-| FP-003 | GitHub profile fetcher — public API, repos, languages, stars, pinned/notable projects | Todo |
-| FP-004 | Normalize GitHub signals → skills, stack depth, shipping track record | Todo |
-| FP-005 | Agent prompts — inject founder + GitHub context; YC agent weights founder–market fit | Todo |
-| FP-006 | Tech agent — map founder skills/repos to MVP feasibility and timeline | Todo |
-| FP-007 | Synthesis — `founder_fit` section: strengths, gaps, co-founder needs, credibility score | Todo |
-| FE-005 | IdeaInput — founder profile fields (skills, experience, accomplished projects) | Todo |
-| FE-006 | IdeaInput — GitHub URL(s) + optional parsed preview before submit | Todo |
-| FE-007 | ReportPanel — display founder fit summary and team–idea alignment | Todo |
-| QA-002 | pytest — GitHub parser mocks + evaluate with founder payload | Todo |
-| OPS-003 | Optional `GITHUB_TOKEN` in `.env.example` (rate limits); README founder flow | Todo |
+| OV-001 | `RadarScores` + `DemandValidation` + `osiris_verdict` schema | Done |
+| OV-002 | Osiris Verdict tiers (Divine Potential → Reconsider) | Done |
+| OV-003 | The Judge synthesis persona + `judge_verdict` field | Done |
+| FE-008 | Venture score radar chart (Market, Demand, Tech, Finance, Execution) | Done |
+| FE-009 | Demand validation panel (pain severity, willingness to pay) | Done |
+| FE-010 | Osiris Verdict display (score /100 + tier badge) | Done |
+| FE-011 | Open markdown in editor of choice (Cursor, VS Code, Windsurf) | Done |
+| FE-012 | Reframe synthesis UI as ⚖️ The Judge | Done |
+| QA-003 | pytest — osiris verdict + radar score derivation | Done |

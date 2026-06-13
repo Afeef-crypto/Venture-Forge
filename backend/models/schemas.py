@@ -61,15 +61,33 @@ class ScoreBreakdown(BaseModel):
     demand: float = 0
 
 
+class RadarScores(BaseModel):
+    market: float = 0
+    demand: float = 0
+    tech: float = 0
+    finance: float = 0
+    execution: float = 0
+
+
+class DemandValidation(BaseModel):
+    pain_point_severity: str = ""
+    willingness_to_pay: str = ""
+
+
 class EvaluationReport(BaseModel):
     overall_score: float = 0
     overall_verdict: str = "maybe"
+    osiris_score: float = 0
+    osiris_verdict: str = ""
     executive_summary: str = ""
     investor_hook: str = ""
     biggest_strength: str = ""
     critical_risk: str = ""
     final_verdict: str | None = None
+    judge_verdict: str = ""
     scores: ScoreBreakdown = Field(default_factory=ScoreBreakdown)
+    radar_scores: RadarScores = Field(default_factory=RadarScores)
+    demand_validation: DemandValidation = Field(default_factory=DemandValidation)
     hackathon_tips: list[str] = Field(default_factory=list)
     mvp_roadmap: list[MvpRoadmapWeek] = Field(default_factory=list)
     pivot_suggestions: list[PivotSuggestion] = Field(default_factory=list)
