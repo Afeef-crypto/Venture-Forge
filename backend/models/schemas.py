@@ -107,3 +107,22 @@ class EvaluateResponse(BaseModel):
 class RateLimitError(BaseModel):
     detail: str
     retry_after_seconds: int
+
+
+class ExportMarkdownRequest(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500_000)
+    filename: str = Field(default="osiris-report.md", pattern=r"^[\w\-. ]+\.md$")
+
+
+class ExportMarkdownResponse(BaseModel):
+    path: str
+    filename: str
+    editor_urls: dict[str, str]
+
+
+class UploadResponse(BaseModel):
+    success: bool = True
+    original_name: str
+    stored_name: str
+    size_bytes: int
+    content_type: str | None = None

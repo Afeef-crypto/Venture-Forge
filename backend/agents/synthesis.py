@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import httpx
 
+from agents.prompt_guardrails import JUDGE_GUARDRAILS, compose_prompt
 from agents.openrouter import call_openrouter_once
 from models.schemas import (
     CursorTask,
@@ -29,13 +30,17 @@ SYNTHESIS_FALLBACK_MODELS = (
 )
 MAX_RETRIES = 1
 
-SYNTHESIS_SYSTEM_PROMPT = (
-    "You are The Judge — Osiris's final arbiter. You synthesize specialist findings "
-    "into one authoritative verdict. Output only valid JSON matching the EvaluationReport "
-    "schema. You MUST always include a cursor_tasks array with at least 8 tasks spanning "
-    "frontend, backend, ai_ml, design, marketing, and business domains. Each task needs "
-    "a unique id (e.g. FE-001), acceptance_criteria, priority, and sprint number."
+_JUDGE_CORE_PROMPT = (
+    "You are The Judge — Osiris's final arbiter. Five specialist evaluators submitted findings. "
+    "Synthesize into one authoritative Osiris Evaluation Report. Resolve conflicts, weight evidence, "
+    "issue a memorable judge_verdict, and produce an actionable build plan. "
+    "Compute osiris_score (0-100) and map to osiris_verdict: Divine Potential (90-100), "
+    "Venture Ready (75-89), Promising but Risky (60-74), Needs Refinement (40-59), Reconsider (<40). "
+    "Populate radar_scores (market, demand, tech, finance, execution), demand_validation, "
+    "and minimum 8 cursor_tasks across all domains."
 )
+
+SYNTHESIS_SYSTEM_PROMPT = compose_prompt(_JUDGE_CORE_PROMPT, JUDGE_GUARDRAILS)
 
 
 def build_synthesis_prompt(idea: str, results: list[AgentResult]) -> str:

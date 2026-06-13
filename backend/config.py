@@ -1,6 +1,10 @@
 import re
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BACKEND_ROOT = Path(__file__).resolve().parent
+DEFAULT_EXPORT_DIR = BACKEND_ROOT.parent
 
 AGENT_KEY_IDS = ("yc", "tech", "biz", "mkt", "dem")
 SYNTHESIS_KEY_ID = "synthesis"
@@ -32,6 +36,12 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     rate_limit_seconds: int = 30
+    export_dir: str = ""
+
+    @property
+    def export_path(self) -> Path:
+        raw = (self.export_dir or "").strip()
+        return Path(raw).resolve() if raw else DEFAULT_EXPORT_DIR.resolve()
 
     @property
     def cors_origin_list(self) -> list[str]:
