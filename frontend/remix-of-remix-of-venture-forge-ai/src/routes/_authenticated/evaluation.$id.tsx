@@ -1,0 +1,13 @@
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Activity, ArrowLeft } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
+import { AgentGrid } from "@/components/agent-grid";
+import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { runEvaluation } from "@/lib/evaluations.functions";
+
+export const Route=createFileRoute("/_authenticated/evaluation/$id")({component:LiveEvaluation});
+function LiveEvaluation(){const {id}=Route.useParams();const navigate=useNavigate();const evaluate=useServerFn(runEvaluation);const [progress,setProgress]=useState(10);const [title,setTitle]=useState("Startup Evaluation");const [error,setError]=useState("");
+useEffect(()=>{let active=true;const begin=async()=>{const {data}=await supabase.from("evaluations").select("*").eq("id",id).single();if(!data||!active)return;setTitle(data.title);if(data.status==="completed"){navigate({to:"/results/$id",params:{id},replace:true});return;}const timer=window.setInterval(()=>setProgress(p=>Math.min(92,p+Math.floor(Math.random()*7)+2)),700);try{await evaluate({data:{id,title:data.title,idea:data.idea,industry:data.industry,stage:data.stage,depth:data.evaluation_depth,research:data.use_web_research}});window.clearInterval(timer);if(active)navigate({to:"/results/$id",params:{id},replace:true});}catch(e){window.clearInterval(timer);setError(e instanceof Error?e.message:"Evaluation failed");}};begin();return()=>{active=false}},[id]);
+return <AppShell><Link to="/dashboard" className="mb-7 flex items-center gap-2 text-xs text-muted-foreground"><ArrowLeft className="h-4 w-4"/>Dashboard</Link><header className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-3xl">Evaluating: {title}</h1><p className="mt-2 text-xs text-muted-foreground">Sit tight, your agents are working in parallel.</p></div><span className="flex items-center gap-2 text-xs text-primary"><Activity className="forge-pulse h-4 w-4"/>Streaming live</span></header><div className="my-8 h-1 bg-muted"><div className="h-full bg-primary transition-all duration-700" style={{width:`${progress}%`}}/></div><AgentGrid progress={progress}/><section className="mt-6 border border-border bg-card p-5"><h2 className="font-sans text-xs font-semibold">Live thoughts</h2><ul className="mt-4 space-y-2 text-xs text-muted-foreground"><li>• YC Partner: Mapping market size and founder insight…</li><li>• Tech Auditor: Researching the fastest MVP architecture…</li><li>• Demand Intel: Analyzing urgency and willingness to pay…</li></ul>{error&&<p className="mt-4 text-xs text-destructive">{error}</p>}</section></AppShell>}

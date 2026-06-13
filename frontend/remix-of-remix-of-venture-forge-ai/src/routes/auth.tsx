@@ -1,0 +1,26 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
+import { useState } from "react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Brand } from "@/components/brand";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+
+const searchSchema = z.object({ mode: z.enum(["signin","signup","forgot"]).catch("signin") });
+export const Route = createFileRoute("/auth")({ validateSearch: searchSchema, head:()=>({meta:[{title:"Sign in — Venture Forge"},{name:"description",content:"Sign in or create your Venture Forge account."}]}), component: AuthPage });
+
+function AuthPage() {
+  const { mode } = Route.useSearch(); const navigate = useNavigate();
+  const [name,setName]=useState(""); const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [confirm,setConfirm]=useState(""); const [show,setShow]=useState(false); const [busy,setBusy]=useState(false); const [message,setMessage]=useState("");
+  const submit=async(e:React.FormEvent)=>{e.preventDefault();setBusy(true);setMessage("");
+    if(mode==="forgot"){const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:`${window.location.origin}/auth`});setMessage(error?.message ?? "Check your email for a reset link.");setBusy(false);return;}
+    if(mode==="signup"&&password!==confirm){setMessage("Passwords do not match.");setBusy(false);return;}
+    const result=mode==="signup"?await supabase.auth.signUp({email,password,options:{data:{display_name:name}}}):await supabase.auth.signInWithPassword({email,password});
+    if(result.error)setMessage(result.error.message);else if(mode==="signup"&&!result.data.session)setMessage("Check your email to confirm your account.");else navigate({to:"/dashboard"});setBusy(false);
+  };
+  const google=async()=>{const result=await lovable.auth.signInWithOAuth("google",{redirect_uri:`${window.location.origin}/dashboard`});if(result.error)setMessage(result.error.message);else if(!result.redirected)navigate({to:"/dashboard"});};
+  return <main className="grid min-h-screen lg:grid-cols-2"><section className="hidden bg-foreground p-12 text-background lg:flex lg:flex-col lg:justify-between"><Brand/><div><p className="mb-5 text-xs uppercase tracking-[.2em] text-primary">Your venture analysis firm</p><h1 className="max-w-lg text-5xl leading-tight">From raw idea to <em className="text-primary">investor-ready.</em></h1><p className="mt-6 max-w-md text-sm leading-6 text-background/60">Six specialist agents evaluate your market, product, technology, finances, demand, and go-to-market strategy.</p></div><p className="text-xs text-background/40">© 2026 Venture Forge</p></section><section className="flex items-center justify-center px-5 py-12"><div className="w-full max-w-sm"><Link to="/" className="mb-12 flex items-center gap-2 text-xs text-muted-foreground"><ArrowLeft className="h-4 w-4"/>Back home</Link><h2 className="text-3xl">{mode==="signup"?"Create your account":mode==="forgot"?"Reset your password":"Welcome back"}</h2><p className="mt-2 text-sm text-muted-foreground">{mode==="signup"?"Start evaluating smarter in minutes.":"Continue building with clarity."}</p>{mode!=="forgot"&&<Button variant="outline" className="mt-7 w-full" onClick={google}>G&nbsp; Continue with Google</Button>}<div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-widest text-muted-foreground"><span className="h-px flex-1 bg-border"/>or continue with email<span className="h-px flex-1 bg-border"/></div><form onSubmit={submit} className="space-y-4">{mode==="signup"&&<div><Label>Name</Label><Input className="mt-1.5" value={name} onChange={e=>setName(e.target.value)} required/></div>}<div><Label>Email</Label><Input type="email" className="mt-1.5" value={email} onChange={e=>setEmail(e.target.value)} required/></div>{mode!=="forgot"&&<><div><div className="flex justify-between"><Label>Password</Label>{mode==="signin"&&<Link to="/auth" search={{mode:"forgot"}} className="text-xs text-primary">Forgot password?</Link>}</div><div className="relative mt-1.5"><Input type={show?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} required minLength={8}/><button type="button" onClick={()=>setShow(!show)} className="absolute right-3 top-2.5 text-muted-foreground">{show?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</button></div></div>{mode==="signup"&&<div><Label>Confirm Password</Label><Input type="password" className="mt-1.5" value={confirm} onChange={e=>setConfirm(e.target.value)} required/></div>}</>} {message&&<p className="text-xs text-primary">{message}</p>}<Button variant="hero" className="w-full" disabled={busy}>{busy?"Please wait…":mode==="signup"?"Create Account":mode==="forgot"?"Send Reset Link":"Sign In"}</Button></form><p className="mt-6 text-center text-xs text-muted-foreground">{mode==="signup"?"Already have an account? ":"New to Venture Forge? "}<Link to="/auth" search={{mode:mode==="signup"?"signin":"signup"}} className="font-semibold text-primary">{mode==="signup"?"Sign in":"Create account"}</Link></p></div></section></main>;
+}
