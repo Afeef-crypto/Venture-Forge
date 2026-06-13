@@ -5,6 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parent
 DEFAULT_EXPORT_DIR = BACKEND_ROOT.parent
+UPLOAD_DIR = "uploads"
+MAX_UPLOAD_SIZE_MB = 20
 
 AGENT_KEY_IDS = ("yc", "tech", "biz", "mkt", "dem")
 SYNTHESIS_KEY_ID = "synthesis"
