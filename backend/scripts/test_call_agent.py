@@ -10,7 +10,7 @@ from agents.agent_config import AGENTS
 from agents.openrouter import call_agent
 
 IDEA = (
-    "Venture Forge: a web app that runs five AI agents in parallel to evaluate "
+    "Osiris: a web app that runs five AI agents in parallel to evaluate "
     "startup ideas and produce an investor-ready report."
 )
 

@@ -17,8 +17,8 @@ RETRYABLE_STATUS = {401, 402, 404, 429}
 def _headers(api_key: str) -> dict[str, str]:
     return {
         "Authorization": f"Bearer {api_key}",
-        "HTTP-Referer": "https://ventureforge.app",
-        "X-Title": "Venture Forge",
+        "HTTP-Referer": "https://osiris.app",
+        "X-Title": "Osiris",
         "Content-Type": "application/json",
     }
 

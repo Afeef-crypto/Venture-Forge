@@ -16,7 +16,7 @@ from config import settings
 from models.schemas import EvaluateRequest, EvaluateResponse
 
 app = FastAPI(
-    title="Venture Forge API",
+    title="Osiris API",
     description="Multi-agent startup idea evaluator powered by OpenRouter",
     version="1.0.0",
 )
