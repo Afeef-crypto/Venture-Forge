@@ -14,9 +14,11 @@ interface PlanCheckboxProps {
   mono?: boolean;
   /** Use on dark code blocks so label text stays readable. */
   onDark?: boolean;
+  /** Slightly larger labels for roadmap / plan headers. */
+  size?: "sm" | "md";
 }
 
-export function PlanCheckbox({ evaluationId, itemId, label, mono, onDark }: PlanCheckboxProps) {
+export function PlanCheckbox({ evaluationId, itemId, label, mono, onDark, size = "sm" }: PlanCheckboxProps) {
   const [checked, setChecked] = useState(() => isPlanItemChecked(evaluationId, itemId));
 
   useEffect(() => {
@@ -31,18 +33,29 @@ export function PlanCheckbox({ evaluationId, itemId, label, mono, onDark }: Plan
     notifyPlanChecksChanged();
   };
 
+  const textClass =
+    size === "md"
+      ? mono
+        ? "font-mono text-sm leading-6"
+        : "text-sm leading-6"
+      : mono
+        ? "font-mono text-[11px] leading-5"
+        : "text-xs leading-5";
+
   return (
     <label
       className={`flex cursor-pointer gap-2.5 rounded-sm py-1 transition-colors ${
         onDark ? "hover:bg-zinc-800/60" : "hover:bg-muted/40"
-      } ${mono ? "font-mono text-[11px] leading-5" : "text-xs leading-5"}`}
+      } ${textClass}`}
     >
       <button
         type="button"
         role="checkbox"
         aria-checked={checked}
         onClick={toggle}
-        className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+        className={`mt-0.5 flex shrink-0 items-center justify-center rounded border transition-colors ${
+          size === "md" ? "h-5 w-5" : "h-4 w-4"
+        } ${
           checked
             ? "border-primary bg-primary text-primary-foreground"
             : onDark
@@ -50,7 +63,7 @@ export function PlanCheckbox({ evaluationId, itemId, label, mono, onDark }: Plan
               : "border-border bg-background"
         }`}
       >
-        {checked && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+        {checked && <Check className={size === "md" ? "h-3 w-3" : "h-2.5 w-2.5"} strokeWidth={3} />}
       </button>
       <span
         className={

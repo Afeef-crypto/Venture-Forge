@@ -1,55 +1,92 @@
-# Osiris
+# Venture Forge
 
-**Multi-agent startup idea evaluator** — five specialist AI agents score your MVP in parallel, then a sixth agent synthesizes an investor-ready report with roadmap and Cursor-ready tasks.
+**Multi-agent startup idea evaluator** — five specialist AI agents score your pitch in parallel, then **The Judge** synthesizes an investor-ready report with MVP roadmap and Cursor-style implementation tasks.
 
-**Repository:** [github.com/Afeef-crypto/Start-it](https://github.com/Afeef-crypto/Start-it)
+**Repository:** [github.com/Afeef-crypto/Venture-Forge](https://github.com/Afeef-crypto/Venture-Forge)
 
 ---
 
 ## What it does
 
-1. You paste a startup / MVP idea (or pick a demo preset).
-2. **Five agents evaluate simultaneously** via OpenRouter (each with its own model and optional API key).
-3. Results stream live into the UI as each agent finishes.
-4. A **synthesis agent** merges all five outputs into one structured report.
-5. Export the report as **Markdown**, **print to PDF**, or copy the investor hook.
+1. **Submit a pitch** — type your idea, upload PDF/Word/Markdown, or use a template preset.
+2. **Input validation** — rejects non-pitches (questions, resumes, cap-table-only docs, code snippets, gibberish) before agents run.
+3. **Five specialists evaluate in parallel** via OpenRouter (each with its own model and optional API key).
+4. **Live streaming UI** — agent cards update over SSE as each specialist finishes.
+5. **The Judge synthesizes** — overall score is the **average of the five specialists** (0–100); roadmap and implementation plan are stripped for non-evaluable inputs.
+6. **Explore results** — overview, per-agent analysis, idea-specific roadmap (3–10 weeks), and implementation plan with checkboxes persisted in `localStorage`.
 
-> *"We didn't build a chatbot. We built a venture analysis firm that runs in 30 seconds."*
+> *"We didn't build a chatbot. We built a venture analysis firm that runs in under a minute."*
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  React frontend (Vite)          http://localhost:8086     │
-│  · Idea input + demo presets                            │
-│  · Live agent status pills (SSE)                        │
-│  · Score summary + agent cards + synthesis report       │
-│  · Markdown / PDF export                                │
-└──────────────────────────┬──────────────────────────────┘
-                           │ POST /api/evaluate/stream (SSE)
-                           │ dev proxy → localhost:8000
-┌──────────────────────────▼──────────────────────────────┐
-│  FastAPI backend (Python)     http://localhost:8000     │
-│  · asyncio.gather — 5 parallel OpenRouter calls         │
-│  · Per-agent keys + model fallbacks                     │
-│  · Synthesis agent → EvaluationReport JSON              │
-│  · Rate limit (30s / IP)                                │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-                    OpenRouter API
+┌──────────────────────────────────────────────────────────────┐
+│  Venture Forge UI (ui/)              http://localhost:8086   │
+│  · TanStack Router — landing, dashboard, reports, results    │
+│  · New evaluation + file upload + client-side idea checks    │
+│  · localStorage evaluations (hackathon mode — no auth req.)  │
+│  · Roadmap + implementation plan tabs per evaluation         │
+└───────────────────────────┬──────────────────────────────────┘
+                            │ POST /api/evaluate/stream (SSE)
+                            │ Vite dev proxy /api → :8000
+┌───────────────────────────▼──────────────────────────────────┐
+│  Osiris API (backend/)               http://localhost:8000     │
+│  · classify_idea() — pre-flight pitch validation               │
+│  · asyncio.gather — 5 parallel OpenRouter agent calls          │
+│  · financial_calibration — market-realistic CFO estimates      │
+│  · synthesis agent → EvaluationReport JSON                     │
+│  · File upload + workspace path ingest (PDF/DOCX/MD/TXT)       │
+│  · Rate limit (30s / IP, configurable)                         │
+└───────────────────────────┬────────────────────────────────────┘
+                            │
+                            ▼
+                     OpenRouter API
 ```
 
-**Stack**
+---
 
-| Layer | Tech |
-|-------|------|
-| Frontend | React 18, TypeScript, Vite 5 |
-| Backend | FastAPI, httpx, Pydantic v2, uvicorn |
-| AI | OpenRouter (direct API — no LangChain) |
-| Deploy | Vercel (frontend) + Railway / Render / Fly (backend) |
+## Tech stack
+
+### Frontend (`ui/` — canonical app)
+
+| Technology | Role | Why we use it | Alternatives considered |
+|------------|------|---------------|-------------------------|
+| **React 19** | UI library | Mature ecosystem, component model fits multi-page report UI | Vue, Svelte — less alignment with TanStack Start tooling |
+| **TypeScript** | Type safety | Shared shapes with API responses; fewer runtime surprises in report mapping | JavaScript — rejected for large report/state surfaces |
+| **Vite 8** | Dev server & bundler | Fast HMR, simple `/api` proxy to FastAPI on `:8000` | Webpack — slower dev loop; Next.js — heavier for a mostly client-side hackathon app |
+| **TanStack Router** | File-based routing | Typed routes (`/results/$id`, search params for tabs), code-splitting | React Router — less integrated with Start; Remix — similar but we standardised on TanStack |
+| **TanStack Start + Nitro** | SSR shell | Lovable/TanStack scaffold; SSR entry for production builds | Pure SPA — fine for demo, Start gives a path to deploy without rewriting |
+| **Tailwind CSS 4** | Styling | Utility-first, matches design tokens (`primary`, `card`, dark/light) | CSS Modules, styled-components — more boilerplate for rapid UI iteration |
+| **Radix UI + shadcn-style primitives** | Accessible components | Dialog, accordion, switch — keyboard/focus handled | Headless UI — similar; raw HTML — too much a11y work |
+| **Framer Motion** | Landing & dashboard motion | Lightweight hero/scroll animations without a animation framework | GSAP — overkill; CSS-only — harder for staggered agent grid |
+| **Zod** | Route search validation | Validates `?tab=` on results page | Yup — equivalent; manual parsing — error-prone |
+| **localStorage** | Evaluation persistence | Zero backend DB for hackathon demos; works offline after first load | Supabase (wired but optional) — adds auth/ops complexity for MVP |
+| **Lucide React** | Icons | Tree-shakeable, consistent stroke icons | Heroicons — equivalent choice |
+
+**Note:** The legacy `frontend/` Vite app is **gitignored**. All active development is in **`ui/`**.
+
+### Backend (`backend/`)
+
+| Technology | Role | Why we use it | Alternatives considered |
+|------------|------|---------------|-------------------------|
+| **Python 3.12+** | Runtime | Best fit for PDF/DOCX parsing, asyncio, and ML-team familiarity | Node — weaker document extraction story; Go — faster but slower iteration on prompts |
+| **FastAPI** | HTTP + SSE API | Native async, OpenAPI docs at `/docs`, StreamingResponse for live agent updates | Flask — no first-class async; Django — too heavy for a single-purpose API |
+| **httpx** | OpenRouter HTTP client | Async requests, connection pooling for 5 parallel agents | `requests` — blocking; `aiohttp` — equivalent, httpx API is cleaner |
+| **Pydantic v2** | Schemas & settings | `EvaluationReport`, `AgentResult`, env validation in `config.py` | dataclasses — no validation; Marshmallow — less idiomatic with FastAPI |
+| **uvicorn** | ASGI server | Standard FastAPI deployment target | Hypercorn — equivalent; gunicorn+uvicorn workers — production option |
+| **pypdf + python-docx** | Pitch file extraction | Upload YC apps and pitch decks without a separate OCR service | Unstructured.io, LlamaParse — heavier deps/cost for hackathon scope |
+| **pytest + pytest-asyncio** | Tests | Idea validation, synthesis normalisation, financial calibration | unittest — less ergonomic for async |
+
+### AI layer
+
+| Technology | Role | Why we use it | Alternatives considered |
+|------------|------|---------------|-------------------------|
+| **OpenRouter** | Model gateway | One API key, swap models per agent, fallback chains, free-tier models | Direct OpenAI/Anthropic — 5× integration work; LangChain — unnecessary abstraction for fixed JSON agents |
+| **Direct JSON prompts** | Agent contract | Each agent returns strict JSON; guardrails in `prompt_guardrails.py` | Tool-calling agents — harder to test; free-form markdown — breaks report mapper |
+| **Per-agent models** | Cost/latency tuning | Fast cheap models for specialists; Sonnet for synthesis quality | Single model for all — worse cost/quality tradeoff |
+| **Heuristic calibration** | CFO realism | `financial_calibration.py` clamps EdTech/B2B CAC/LTV to market ranges when LLM drifts | Fine-tuned model — overkill; trust LLM only — produced $500+ student CAC |
 
 ---
 
@@ -57,14 +94,16 @@
 
 | # | Agent | Role | Primary model |
 |---|-------|------|---------------|
-| 1 | **YC Evaluator** | Paul Graham–style partner — market size, moat, founder fit | `meta-llama/llama-3.1-8b-instruct` |
-| 2 | **Tech Auditor** | Full-stack architect — feasibility, stack, MVP timeline | `nvidia/nemotron-nano-9b-v2:free` |
-| 3 | **Business CFO** | LTV/CAC, burn rate, funding path | `meta-llama/llama-3.1-8b-instruct` |
-| 4 | **Marketing** | GTM, ICP, channels, viral potential | `anthropic/claude-haiku-4-5` |
-| 5 | **Demand Intel** | Pain severity, timing, willingness to pay | `mistralai/mistral-small-3.2-24b-instruct` |
-| 6 | **Synthesis** | Merges all five into final report | `anthropic/claude-sonnet-4-6` |
+| 1 | **YC Evaluator** | Partner-style — problem, timing, wedge, founder fit | `meta-llama/llama-3.1-8b-instruct` |
+| 2 | **Tech Auditor** | MVP feasibility, stack, timeline, technical risk | `openai/gpt-4o-mini` |
+| 3 | **Business CFO** | Unit economics, CAC/LTV, burn, runway (calibrated ranges) | `openai/gpt-4o-mini` |
+| 4 | **Marketing** | ICP, GTM, channels, positioning | `anthropic/claude-haiku-4-5` |
+| 5 | **Demand Intel** | Pain severity, WTP, timing, substitutes | `mistralai/mistral-small-3.2-24b-instruct` |
+| 6 | **The Judge** (synthesis) | Final report, radar scores, roadmap, cursor tasks | `anthropic/claude-sonnet-4-6` |
 
-Each evaluator has **fallback models** (e.g. `gpt-4o-mini`, `nemotron-free`). If a per-agent API key fails (401 / 402 / 404), the backend retries with the global key and the next model in the chain.
+Each evaluator has **fallback models** (e.g. `gpt-4o-mini`, `nemotron-free`). Failed keys or 401/402/404 responses trigger the next model in the chain.
+
+**Scoring:** Judge display score = **simple average of the five specialists** (mapped to 0–100). Non-startup inputs get score ~10 with no roadmap/plan.
 
 ---
 
@@ -72,73 +111,47 @@ Each evaluator has **fallback models** (e.g. `gpt-4o-mini`, `nemotron-free`). If
 
 ```
 .
-├── backend/
-│   ├── main.py                 # FastAPI routes + SSE streaming
-│   ├── config.py               # Settings + per-agent API keys
-│   ├── agents/
-│   │   ├── agent_config.py     # Council prompts, models, fallbacks
-│   │   ├── openrouter.py       # Async OpenRouter client + retry chain
-│   │   ├── orchestrator.py     # asyncio.gather — 5 parallel evaluators
-│   │   └── synthesis.py        # ⚖️ The Judge — merges report + Osiris verdict
-│   ├── models/
-│   │   └── schemas.py          # Pydantic types (EvaluationReport, RadarScores…)
-│   ├── utils/
-│   │   ├── osiris_verdict.py   # Verdict tiers + radar score derivation
-│   │   └── parse_json.py       # LLM JSON extraction
-│   ├── scripts/                # OpenRouter smoke tests (live keys required)
-│   │   ├── test_call_agent.py
-│   │   ├── test_models.py
-│   │   ├── test_free_models.py
-│   │   └── test_keys_per_agent.py
-│   ├── tests/                  # pytest suite
-│   │   ├── test_api.py
-│   │   ├── test_config.py
-│   │   ├── test_orchestrator.py
-│   │   └── test_synthesis.py
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── pytest.ini
-│   └── .env.example
-│
-├── frontend/
+├── ui/                              # ← Canonical frontend (port 8086)
 │   ├── src/
-│   │   ├── api/
-│   │   │   └── evaluate.ts     # SSE client → backend
-│   │   ├── config/
-│   │   │   └── agents.ts         # Council evaluator UI metadata
-│   │   ├── components/
-│   │   │   ├── AgentCard/        # Per-evaluator result cards
-│   │   │   ├── AgentStatusBar/   # Live SSE status pills
-│   │   │   ├── DemandValidation/ # Pain severity + willingness to pay
-│   │   │   ├── ExportBar/        # Markdown, open-in-editor, PDF, hook
-│   │   │   ├── IdeaInput/        # Idea textarea + demo presets
-│   │   │   ├── ReportPanel/      # ⚖️ The Judge + roadmap + cursor tasks
-│   │   │   ├── ScoreSummary/     # Council score overview
-│   │   │   └── VentureRadar/     # 5-axis venture spider chart
-│   │   ├── utils/
-│   │   │   ├── exportMarkdown.ts # Report → .md builder
-│   │   │   ├── openInEditor.ts   # Cursor / VS Code / Windsurf export
-│   │   │   ├── osirisVerdict.ts  # Divine Potential → Reconsider tiers
-│   │   │   ├── radarScores.ts    # Market · Demand · Tech · Finance · Execution
-│   │   │   └── scoreColor.ts
-│   │   ├── types/index.ts
-│   │   ├── styles/globals.css
-│   │   └── App.tsx               # Main evaluation flow
-│   ├── index.html
-│   ├── vite.config.ts            # Dev proxy /api → :8000
-│   ├── vercel.json
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   ├── package.json
+│   │   ├── routes/                  # TanStack file routes
+│   │   │   ├── index.tsx            # Landing page
+│   │   │   ├── docs.tsx
+│   │   │   └── _authenticated/      # dashboard, new-evaluation, results, …
+│   │   ├── api/                     # evaluate.ts (SSE), upload.ts
+│   │   ├── components/              # app-shell, roadmap, implementation-plan, …
+│   │   ├── lib/
+│   │   │   ├── idea-validation.ts   # Client-side pitch checks (mirrors backend)
+│   │   │   ├── evaluation-mapper.ts # Backend JSON → UI report
+│   │   │   ├── evaluation-plan.ts   # Roadmap + implementation plan builder
+│   │   │   ├── financial-display.ts # Score resolution for stored evals
+│   │   │   └── local-evaluations.ts # localStorage CRUD
+│   │   ├── config/agents.ts
+│   │   └── types/evaluation.ts
+│   ├── vite.config.ts               # Proxy /api → localhost:8000
 │   └── .env.example
 │
-├── .cursor/
-│   └── tasks/
-│       └── sprints.md            # Sprint tracker
+├── backend/
+│   ├── main.py                      # FastAPI routes + SSE
+│   ├── config.py                    # Settings + per-agent API keys
+│   ├── agents/
+│   │   ├── agent_config.py          # Prompts, models, fallbacks
+│   │   ├── openrouter.py            # Async client + retry chain
+│   │   ├── orchestrator.py          # Parallel evaluator gather
+│   │   ├── synthesis.py             # The Judge
+│   │   └── prompt_guardrails.py     # Shared + per-agent guardrails
+│   ├── models/schemas.py
+│   ├── utils/
+│   │   ├── idea_validation.py       # Pre-eval pitch classification
+│   │   ├── venture_evaluable.py     # Post-agent non-idea detection
+│   │   ├── financial_calibration.py # Market-realistic CFO numbers
+│   │   ├── non_idea_response.py
+│   │   └── file_handler.py
+│   ├── tests/
+│   ├── Dockerfile
+│   └── .env.example
 │
-├── docker-compose.yml            # Backend :8000 + frontend :8086
-├── .env.example                  # Root env reference
-├── .gitignore
+├── frontend/                        # Legacy app (gitignored — do not use)
+├── docker-compose.yml               # Backend :8000 (+ legacy frontend image)
 └── README.md
 ```
 
@@ -148,7 +161,7 @@ Each evaluator has **fallback models** (e.g. `gpt-4o-mini`, `nemotron-free`). If
 
 - **Python 3.12+**
 - **Node.js 20+**
-- **[OpenRouter](https://openrouter.ai/) API key(s)** — at minimum one global key; optional per-agent keys
+- **[OpenRouter](https://openrouter.ai/) API key** — global key minimum; optional per-agent keys
 
 ---
 
@@ -157,8 +170,8 @@ Each evaluator has **fallback models** (e.g. `gpt-4o-mini`, `nemotron-free`). If
 ### 1. Clone
 
 ```bash
-git clone https://github.com/Afeef-crypto/Start-it.git
-cd Start-it
+git clone https://github.com/Afeef-crypto/Venture-Forge.git
+cd Venture-Forge
 ```
 
 ### 2. Backend
@@ -169,12 +182,12 @@ python -m venv .venv
 ```
 
 **Windows**
-```bash
+```powershell
 .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-# Edit .env — add your OpenRouter key(s)
-uvicorn main:app --reload --port 8000
+# Edit .env — add OPENROUTER_API_KEY
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 **macOS / Linux**
@@ -182,24 +195,23 @@ uvicorn main:app --reload --port 8000
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env — add your OpenRouter key(s)
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Verify: [http://localhost:8000/api/health](http://localhost:8000/api/health)  
-API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+Verify: [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)  
+API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ### 3. Frontend
 
 In a **second terminal**:
 
 ```bash
-cd frontend
+cd ui
 npm install
 npm run dev
 ```
 
-Open [http://localhost:8086](http://localhost:8086). Vite proxies `/api` to the backend — no `VITE_API_URL` needed locally.
+Open [http://localhost:8086](http://localhost:8086). Vite proxies `/api` to the backend — leave `VITE_API_URL` empty locally.
 
 ---
 
@@ -210,24 +222,20 @@ Open [http://localhost:8086](http://localhost:8086). Vite proxies `/api` to the 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENROUTER_API_KEY` | Yes* | Global fallback key for all agents |
-| `OPENROUTER_KEY_YC` | No | Dedicated key for YC evaluator |
-| `OPENROUTER_KEY_TECH` | No | Dedicated key for Tech auditor |
-| `OPENROUTER_KEY_BIZ` | No | Dedicated key for Business CFO |
-| `OPENROUTER_KEY_MKT` | No | Dedicated key for Marketing |
-| `OPENROUTER_KEY_DEM` | No | Dedicated key for Demand intel |
-| `OPENROUTER_KEY_SYNTHESIS` | No | Dedicated key for synthesis agent |
-| `CORS_ORIGINS` | No | Allowed frontend origins (comma-separated) |
-| `RATE_LIMIT_SECONDS` | No | Cooldown between runs per IP (default `30`) |
+| `OPENROUTER_KEY_YC` … `OPENROUTER_KEY_DEM` | No | Per-agent key overrides |
+| `OPENROUTER_KEY_SYNTHESIS` | No | The Judge synthesis key |
+| `CORS_ORIGINS` | No | Comma-separated frontend origins (default includes `:8086`) |
+| `RATE_LIMIT_SECONDS` | No | Cooldown between runs per IP (default `30`, set `0` in dev) |
+| `UPLOAD_DIR` / `MAX_UPLOAD_SIZE_MB` | No | Pitch file upload limits |
 
-\*At least one valid key must resolve for each agent — either its dedicated key or the global fallback.
+\*At least one valid key must resolve for each agent — dedicated key or global fallback.
 
-**Key resolution order:** `OPENROUTER_KEY_{AGENT}` → `OPENROUTER_API_KEY` → on API failure, retry with global key + fallback models.
-
-### Frontend (`frontend/.env.local`) — production only
+### Frontend (`ui/.env.local`) — production only
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_URL` | Deployed backend URL (e.g. `https://your-api.railway.app`). Leave empty in local dev. |
+| `VITE_API_URL` | Deployed backend URL. Empty in local dev (uses Vite proxy). |
+| `VITE_SUPABASE_*` | Optional — not required; evaluations persist in `localStorage` |
 
 ---
 
@@ -235,53 +243,68 @@ Open [http://localhost:8086](http://localhost:8086). Vite proxies `/api` to the 
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/health` | Status, agent count, per-key configuration |
-| `POST` | `/api/evaluate` | Full evaluation — returns JSON `{ agent_results, report }` |
+| `GET` | `/api/health` | Status, agent count, key configuration |
+| `POST` | `/api/evaluate` | Full evaluation JSON `{ agent_results, report }` |
 | `POST` | `/api/evaluate/stream` | **SSE stream** used by the UI |
+| `POST` | `/api/upload` | Pitch file upload + text extraction |
+| `POST` | `/api/upload/workspace` | Read pitch from local editor path |
+| `POST` | `/api/export/markdown` | Write report markdown + editor deep links |
 
-**SSE events (in order):**
+**SSE events:**
 ```
-event: agent_complete   → { index, agent_id, result }  × 5
-event: synthesis_complete → { report }
+event: agent_complete      → { index, agent_id, result }  × 5
+event: synthesis_complete  → { report }
 event: done
 ```
 
 **Request body:**
 ```json
-{ "idea": "Your startup idea (10–8000 characters)" }
+{ "idea": "Your startup pitch (10–8000 characters)" }
 ```
 
 ---
 
 ## Report output
 
-The synthesis agent produces an `EvaluationReport` containing:
+The Judge produces an `EvaluationReport` including:
 
-- Overall score + verdict + executive summary
-- Investor hook (one-liner)
-- Biggest strength / critical risk
-- Per-agent scores
-- Hackathon tips
-- 3-week MVP roadmap
-- Pivot suggestions
-- Domain tasks (frontend, backend, AI/ML, design, marketing, business)
-- **Cursor tasks** — structured tasks with IDs, acceptance criteria, priority, sprint
+- Overall score (0–100) and Osiris verdict tier
+- Executive summary, investor hook, strength / critical risk
+- Per-specialist scores and expandable analysis blocks
+- Venture radar (market, demand, tech, finance, execution)
+- Demand validation (pain severity, willingness to pay)
+- **MVP roadmap** — 3–10 weeks based on tech complexity
+- **Implementation plan** — Cursor-style tasks with `tech_stack`, `implementation_steps`, checkboxes
+- Non-evaluable inputs: low score, no roadmap/plan, clear rejection reason
 
-Export via **Download Markdown**, **Print PDF**, or **Copy investor hook** in the UI.
+---
+
+## Key product flows
+
+| Flow | Route | Notes |
+|------|-------|-------|
+| Landing | `/` | Hero, agents section; logo → scroll to `#product` |
+| Dashboard | `/dashboard` | Recent evaluations table + agent grid |
+| New evaluation | `/new-evaluation` | Pitch input, upload, client validation banner |
+| Live run | `/evaluation/$id` | SSE progress, then redirect to results |
+| Report | `/results/$id` | Overview, Roadmap, Implementation Plan, per-agent tabs |
+| Reports list | `/reports` | All completed evaluations with resolved scores |
+| Templates | `/templates` | Preset pitches → new evaluation |
+| Docs | `/docs` | Product documentation |
 
 ---
 
 ## Docker
 
+Backend only (recommended for local full-stack use the `ui/` dev server):
+
 ```bash
-# Add keys to backend/.env first
-docker compose up --build
+cd backend
+docker build -t venture-forge-api .
+docker run --env-file .env -p 8000:8000 venture-forge-api
 ```
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:8086 |
-| Backend | http://localhost:8000 |
+`docker-compose.yml` still references the legacy `frontend/` image; for day-to-day development run **`ui/` with npm** as above.
 
 ---
 
@@ -289,14 +312,14 @@ docker compose up --build
 
 | Service | Directory | Platform | Notes |
 |---------|-----------|----------|-------|
-| Frontend | `frontend/` | [Vercel](https://vercel.com) | Set root directory to `frontend` |
+| Frontend | `ui/` | Vercel / Nitro host | Set root to `ui`, build `npm run build` |
 | Backend | `backend/` | Railway / Render / Fly.io | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
 
 **Production checklist**
-1. Set all OpenRouter keys on the backend host (never in the frontend).
-2. Set `VITE_API_URL` on Vercel to your backend URL.
-3. Add your Vercel domain to `CORS_ORIGINS` on the backend.
-4. Confirm `GET /api/health` shows `all_keys_ready: true`.
+1. Set OpenRouter keys on the backend host only.
+2. Set `VITE_API_URL` on the frontend to your API URL.
+3. Add your frontend domain to `CORS_ORIGINS`.
+4. Confirm `GET /api/health` → `all_keys_ready: true`.
 
 ---
 
@@ -304,13 +327,13 @@ docker compose up --build
 
 ```bash
 cd backend
-pytest
+python -m pytest
 ```
 
-Smoke-test all agents against live OpenRouter (requires `.env` keys):
+Focused suites:
 
 ```bash
-python scripts/test_call_agent.py
+python -m pytest tests/test_idea_validation.py tests/test_financial_calibration.py tests/test_synthesis.py -q
 ```
 
 ---
@@ -319,28 +342,27 @@ python scripts/test_call_agent.py
 
 | Symptom | Fix |
 |---------|-----|
-| **Backend unreachable** banner | Start backend: `uvicorn main:app --reload --port 8000` |
-| Agent shows **error**, score 0 | Expand the agent card — error detail shows the OpenRouter message |
-| **401 User not found** | Invalid key for that agent — fix `OPENROUTER_KEY_*` or rely on global fallback |
-| **402 Insufficient credits** | Add credits at [openrouter.ai/settings/credits](https://openrouter.ai/settings/credits) or use `:free` models |
-| **404 No endpoints found** | Model slug deprecated — backend auto-retries fallbacks; update `agent_config.py` if all fail |
-| **Rate limit: wait Ns** | 30s cooldown per IP — wait or set `RATE_LIMIT_SECONDS=0` in dev |
-| Only Marketing works | Other keys may be invalid — set one working `OPENROUTER_API_KEY` as global fallback |
+| **Backend unreachable** banner | Start API: `cd backend; python -m uvicorn main:app --reload --port 8000` |
+| Agent score **0 / error** | Expand agent tab — OpenRouter message in summary |
+| **401 / 402 / 404** from OpenRouter | Fix key or credits; fallbacks retry automatically |
+| **Rate limit: wait Ns** | Wait or set `RATE_LIMIT_SECONDS=0` in dev |
+| **Not an evaluable startup idea** | Paste a product pitch (problem + customer + solution), not equity/resume/chat |
+| Stale score on old report | Re-run evaluation after backend restart; reports remap on load via `evaluation-mapper` |
+| CFO numbers look wrong | Re-run — `financial_calibration.py` applies EdTech/B2B market ranges |
 
-Check key status anytime:
 ```bash
-curl http://localhost:8000/api/health
+curl http://127.0.0.1:8000/api/health
 ```
 
 ---
 
-## Hackathon demo (3 minutes)
+## Hackathon demo (~3 min)
 
-1. Open the app → pick a **demo preset** (AI Code Review, Local Food Delivery, or Student Budget App).
-2. Click **Run Full Evaluation** — watch five agent pills activate in parallel.
-3. Cards fill in live as SSE events arrive.
-4. Synthesis report appears with score ring, investor hook, and 3-week roadmap.
-5. Click **Download Markdown** → open in Cursor → show `cursor_tasks` ready to execute.
+1. Open [http://localhost:8086](http://localhost:8086) → **Evaluate My Startup** or pick a template.
+2. Paste a pitch or upload a YC application PDF — watch validation pass.
+3. **Run Evaluation** — five agent cards fill via SSE; Judge synthesizes.
+4. Open **Results** → Overview score, then **Roadmap** and **Implementation Plan** tabs.
+5. Show per-agent **Business CFO** with calibrated CAC/LTV and elaborated executive summaries.
 
 ---
 

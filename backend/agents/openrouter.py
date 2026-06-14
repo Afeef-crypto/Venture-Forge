@@ -7,6 +7,7 @@ import httpx
 from agents.agent_config import AgentDefinition
 from config import settings
 from models.schemas import AgentResult, Tag
+from utils.financial_calibration import calibrate_biz_financials
 from utils.parse_json import parse_json
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
@@ -52,7 +53,9 @@ def _parse_api_error(status_code: int, body: str) -> str:
     return f"OpenRouter {status_code}: {message[:240]}"
 
 
-def _normalize_result(parsed: dict, agent_id: str) -> AgentResult:
+def _normalize_result(parsed: dict, agent_id: str, idea: str = "") -> AgentResult:
+    if agent_id == "biz":
+        parsed = calibrate_biz_financials(idea, parsed)
     tags_raw = parsed.get("tags") or []
     tags: list[Tag] = []
     if isinstance(tags_raw, list):
@@ -179,6 +182,7 @@ async def call_agent(
                     model=model,
                     system_prompt=agent.system_prompt,
                     user_prompt=user_prompt,
+                    max_tokens=agent.max_tokens,
                 )
 
                 if http_error:
@@ -190,7 +194,7 @@ async def call_agent(
 
                 parsed = parse_json(content or "")
                 if parsed:
-                    return _normalize_result(parsed, agent.id)
+                    return _normalize_result(parsed, agent.id, idea)
 
                 last_error = f"Invalid JSON from {model} — retrying"
             # exhausted retries for this model; try next model

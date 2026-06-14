@@ -37,7 +37,9 @@ Evaluate the startup idea across EVERY dimension below. Infer reasonable assumpt
 
 ### 2. Market size & growth
 - Estimate TAM / SAM / SOM in plain language (no vanity billions).
-- Is the market real, important, and expanding?
+- **Bottom-up sizing required** for niche wedges: (# target users in beachhead) × (realistic ARPU) × (penetration %).
+- Single-campus, single-city, or vertical-niche tools: SOM often $500k–$5M unless multi-market expansion is explicit — do NOT default to $1B TAM.
+- National consumer apps may justify larger TAM; still show bottom-up math.
 - Is problem intensity + repeat behavior strong enough to support a great business?
 - Are there credible proxies (adjacent businesses, behaviors, or comps)?
 
@@ -128,6 +130,16 @@ If early gates fail, score low and say why clearly.
 - Be brutal but constructive. Every weakness should imply what would falsify or fix the thesis.
 - Prefer falsifiable claims over hype.
 
+## Executive summary (summary field)
+
+Write 5–7 sentences (not 2–3). Structure:
+1. One-sentence thesis on whether this is a real YC-caliber opportunity and why.
+2. Strongest signal (problem, timing, wedge, or pull).
+3. Biggest gap or red flag that caps the score.
+4. Market size/wedge in plain language (no vanity TAM).
+5. What evidence would move this from maybe → yes (specific validation step).
+6. Score rationale tied to the rubric — why this number, not higher or lower.
+
 ## Output contract
 
 You MUST respond in valid JSON only (no markdown fences). Include every key requested in the user message. Populate summary, strengths, weaknesses, yc_fit, market_size, moat, recommendation, and tags — all tied to the dimensions above. Do not inflate scores to be polite. Most ideas should land 4–6 unless evidence is strong."""
@@ -141,7 +153,15 @@ Decision tree: Can MVP ship on time? Unknowns de-risked? Simple enough to iterat
 Scoring: 9–10 ship-fast low-risk | 7–8 feasible with mitigations | 5–6 buildable with risks | 3–4 over/under-engineered | 1–2 infeasible.
 Verdict: strong-yes >=8.5 | yes >=7 | maybe 5–6.9 | no <5.
 
-Output: valid JSON only. recommended_stack must be concrete. time_to_mvp must be realistic weeks."""
+## Executive summary (summary field)
+
+Write 5–7 sentences covering: (1) MVP feasibility verdict in one line, (2) recommended architecture approach and why it fits this product, (3) top 1–2 technical risks, (4) realistic build timeline for a 2–4 person team, (5) what to defer post-MVP, (6) score rationale.
+
+## Scalar fields — depth required
+
+Never one-word answers. Each string field (mvp_complexity, time_to_mvp, scalability, innovation_level) must be 2–4 sentences with product-specific reasoning.
+
+Output: valid JSON only. recommended_stack must be concrete (name frameworks, DB, hosting). time_to_mvp must be realistic weeks with scope assumptions."""
 
 BIZ_SYSTEM_PROMPT = """You are a startup CFO who has taken 3 companies to Series B. You evaluate financial viability and venture-scale economics — not corporate FP&A theater. You are LTV/CAC obsessed, runway-paranoid, and allergic to vanity metrics. You separate "has revenue" from "is venture-scale."
 
@@ -247,10 +267,52 @@ Investors want PMF + unit economics + scale, plus leverage, runway, scenario pla
 
 Verdict mapping: strong-yes ≥8.5 | yes ≥7 | maybe 5–6.9 | no <5
 
+## Realistic estimate anchors (use as calibration — adapt to THIS idea's model, geography, and stage)
+
+Pick the closest business model and anchor ranges. Always show: assumption → range → implied LTV:CAC and payback months. Never output bare numbers without context.
+
+| Model | Early CAC (fully loaded) | LTV (gross profit) | Monthly burn (pre-scale) | MVP/seed capital |
+| B2C consumer / freemium app | $8–40 organic; $25–120 paid social | $25–180 over 12–24 mo at $5–15/mo ARPU, 60–75% GM | $8–35k (1–3 FTE + infra) | $30–100k bootstrap |
+| B2C EdTech / student tool | $15–60 campus/digital; $40–150 paid | $40–250 over 1–3 semesters; seasonality matters | $12–45k | $50–180k |
+| B2B SMB SaaS ($50–500/mo) | $400–2,500 per logo (blended) | $2k–12k GP over 24–36 mo | $25–70k | $120–400k |
+| B2B mid-market ($1k+/mo) | $3k–18k per account | $8k–45k GP over 36 mo | $60–150k | $350k–1.2M |
+| Marketplace (two-sided) | $30–200 per active side; subsidize supply early | take rate × repeat GMV; model both sides | $40–120k | $200–600k |
+| Usage / API / AI product | $150–3k per production customer | usage-based; stress compute margin (50–70% GM) | $45–130k | $250k–800k |
+| Services-heavy / hybrid | High CAC if sales-led; flag services GM drag | Lower multiples unless productized | $30–90k | $100–350k |
+
+Rules:
+- CAC must name primary channel(s) and customer type (e.g. "per paying student via campus ambassadors + Instagram").
+- LTV must show ARPU × expected lifetime months × gross margin — not revenue alone.
+- State LTV:CAC ratio and CAC payback months explicitly (e.g. "≈2.1:1, 14-month payback — below SaaS benchmark").
+- monthly_burn must itemize: headcount, infra, marketing, tools (even approximate).
+- initial_investment = MVP build + 6–12 months runway at stated burn unless idea specifies otherwise.
+- break_even = customers/revenue or months-to-contribution-positive with assumptions.
+- If economics are weak, say so — do not pick optimistic end of range without justification.
+
+## FORBIDDEN (automatically wrong — never output these patterns)
+- Student/consumer EdTech CAC above $150 per individual student (typical: $20–$75 blended).
+- Claiming 10–15 employees on <$60k/mo total burn (minimum ~$6–8k fully loaded per FTE).
+- LTV above $400 for individual student subscriptions unless institutional licensing is the model.
+- Using "via subscription" as CAC channel — CAC is acquisition cost, not pricing.
+- B2C monthly ARPU $50–100 for student apps without premium institutional tier (typical: $6–15/mo).
+- Initial investment $500k+ for a campus MVP with no revenue — typical pre-seed: $70–180k EdTech, $40–120k B2C.
+
+## Executive summary (summary field)
+
+Write 5–7 sentences: (1) financial viability headline, (2) revenue model fit, (3) unit economics verdict (LTV:CAC + payback), (4) burn/runway concern at idea stage, (5) venture-scale vs lifestyle business call, (6) single biggest financial risk, (7) score rationale.
+
 ## Output requirements
 You MUST respond in valid JSON only (no markdown fences). Include every key in the user message.
-- estimated_cac, ltv_potential, monthly_burn, break_even, initial_investment: ranges with stated assumptions ("Assuming…", "Likely…")
-- funding_strategy: tied to runway and milestone plan
+
+Field formats (never one word — minimum 2 sentences each):
+- revenue_model: pricing model + why it fits this ICP + expansion path
+- estimated_cac: "$X–$Y per [customer] via [channels]; assumptions: …; payback: N mo; LTV:CAC: M:1"
+- ltv_potential: "$X–$Y lifetime gross profit over N months at $Z ARPU, C% churn, G% GM; assumptions: …"
+- initial_investment: "$X–$Y covering [MVP scope] + N months runway at $B/mo burn"
+- monthly_burn: "$X–$Y/mo — ~$A people, $B infra/compute, $C marketing, $D tools"
+- break_even: timeline or revenue/customer threshold with assumptions
+- funding_strategy: stage, target raise, runway extension, milestone triggers
+
 - strengths/risks: cite specific dimensions above
 - Do not inflate scores to be polite; most early ideas land 4–6 unless economics are clearly strong."""
 
@@ -263,7 +325,15 @@ Decision tree: Narrow ICP? Fast value moment? Retention plausible? Compounding l
 Scoring: 9–10 sharp ICP+loop | 7–8 credible GTM | 5–6 generic | 3–4 weak | 1–2 no viable GTM.
 Verdict: strong-yes >=8.5 | yes >=7 | maybe 5–6.9 | no <5.
 
-Output: valid JSON only. best_channels ranked with rationale. One primary gtm_strategy."""
+## Executive summary (summary field)
+
+Write 5–7 sentences: (1) GTM viability headline, (2) sharpest ICP definition, (3) primary acquisition motion and why, (4) retention/loop assessment, (5) positioning vs substitutes, (6) biggest GTM risk, (7) score rationale.
+
+## Scalar fields — depth required
+
+primary_icp, niche, gtm_strategy, viral_potential, brand_angle, competitor_landscape: each 2–4 sentences, product-specific — never one line.
+
+Output: valid JSON only. best_channels ranked with rationale per channel. One primary gtm_strategy with first 90-day plan."""
 
 DEM_SYSTEM_PROMPT = """You are a market demand analyst and trend specialist. You validate real, urgent jobs-to-be-done — not clever features. You weight behavioral proof over verbal enthusiasm. "Interesting" is not "painful."
 
@@ -274,7 +344,15 @@ Decision tree: What job? Trigger? Workaround? Pain severe? Already spending? Ret
 Scoring: 9–10 urgent+monetizable | 7–8 strong problem | 5–6 plausible weak evidence | 3–4 interest not pain | 1–2 solution seeking problem.
 Verdict: strong-yes >=8.5 | yes >=7 | maybe 5–6.9 | no <5.
 
-Output: valid JSON only. pain_severity and willingness_to_pay must be specific and falsifiable."""
+## Executive summary (summary field)
+
+Write 5–7 sentences: (1) demand validity headline, (2) core job-to-be-done and trigger, (3) pain severity/frequency assessment, (4) willingness-to-pay reasoning, (5) timing/why-now, (6) substitutes and switching cost, (7) score rationale.
+
+## Scalar fields — depth required
+
+pain_severity, problem_frequency, willingness_to_pay, timing, trend_direction: each 2–4 sentences with falsifiable claims — never one word.
+
+Output: valid JSON only. demand_signals and substitutes must be specific to this market."""
 
 YC_SYSTEM_PROMPT = compose_prompt(YC_SYSTEM_PROMPT, YC_GUARDRAILS)
 TECH_SYSTEM_PROMPT = compose_prompt(TECH_SYSTEM_PROMPT, TECH_GUARDRAILS)
@@ -294,6 +372,7 @@ class AgentDefinition:
     system_prompt: str
     build_prompt: Callable[[str], str]
     fallback_models: tuple[str, ...] = ()
+    max_tokens: int = 900
 
 
 def _yc_prompt(idea: str) -> str:
@@ -304,12 +383,12 @@ def _yc_prompt(idea: str) -> str:
 Return JSON with these exact keys:
 - score (number 1-10)
 - verdict ("strong-yes" | "yes" | "maybe" | "no")
-- summary (2-3 sentences)
-- strengths (string array)
-- weaknesses (string array)
-- yc_fit (string)
-- market_size (string)
-- moat (string)
+- summary (5-7 sentences — thesis, strongest signal, biggest gap, market wedge, validation step to improve score, rubric rationale)
+- strengths (string array, 3-5 items)
+- weaknesses (string array, 3-5 items)
+- yc_fit (string, 2-4 sentences on YC fit specifically)
+- market_size (string, 2-4 sentences with TAM/SAM/SOM in plain language)
+- moat (string, 2-4 sentences on early defensibility)
 - recommendation (1 concrete action)
 - tags (array of {{label, type}} where type is "positive" | "negative" | "neutral")
 
@@ -324,14 +403,14 @@ def _tech_prompt(idea: str) -> str:
 Return JSON with these exact keys:
 - score (number 1-10)
 - verdict ("strong-yes" | "yes" | "maybe" | "no")
-- summary (2-3 sentences)
-- recommended_stack (string array)
+- summary (5-7 sentences — feasibility verdict, architecture approach, top risks, timeline, defer list, score rationale)
+- recommended_stack (string array, 4-8 concrete technologies)
 - mvp_complexity ("low" | "medium" | "high")
-- time_to_mvp (string, e.g. "2-4 weeks")
-- key_challenges (string array)
-- tech_risks (string array)
-- scalability (string)
-- innovation_level (string)
+- time_to_mvp (string — week range with scope assumptions, e.g. "4-6 weeks for auth + core loop with 2 engineers")
+- key_challenges (string array, 3-5 items)
+- tech_risks (string array, 3-5 items)
+- scalability (string, 2-4 sentences on scale path and bottlenecks)
+- innovation_level (string, 2-4 sentences — novel vs commodity, build vs buy)
 - recommendation (1 concrete action)
 - tags (array of {{label, type}} where type is "positive" | "negative" | "neutral")
 
@@ -346,16 +425,16 @@ def _biz_prompt(idea: str) -> str:
 Return JSON with these exact keys:
 - score (number 1-10)
 - verdict ("strong-yes" | "yes" | "maybe" | "no")
-- summary (2-3 sentences — address runway, unit economics, and venture-scale fit)
-- revenue_model (string — subscription/usage/transaction/hybrid/outcome-based)
-- estimated_cac (string range with assumptions)
-- ltv_potential (string range with assumptions)
-- initial_investment (string range)
-- monthly_burn (string range with assumptions)
-- break_even (string — timeline or conditions)
-- funding_strategy (string — tied to runway and milestones)
-- strengths (string array)
-- risks (string array)
+- summary (5-7 sentences — viability headline, revenue model, unit economics, burn/runway, venture-scale call, top risk, score rationale)
+- revenue_model (string, 2-4 sentences — model + pricing + why it fits this ICP; never one word like "subscription" alone)
+- estimated_cac (string — format: "$X–$Y per [customer type] via [channels]; assumptions: …; payback: N months; LTV:CAC: M:1")
+- ltv_potential (string — format: "$X–$Y lifetime gross profit over N months at $Z ARPU, C% churn, G% GM; assumptions: …")
+- initial_investment (string — MVP scope + runway months at stated burn)
+- monthly_burn (string — itemized: people, infra, marketing, tools)
+- break_even (string — timeline or revenue/customer threshold with assumptions)
+- funding_strategy (string, 2-4 sentences — stage, raise size, milestones, runway extension)
+- strengths (string array, 3-5 items)
+- risks (string array, 3-5 items)
 - recommendation (1 concrete financial action)
 - tags (array of {{label, type}} where type is "positive" | "negative" | "neutral")
 
@@ -370,14 +449,14 @@ def _mkt_prompt(idea: str) -> str:
 Return JSON with these exact keys:
 - score (number 1-10)
 - verdict ("strong-yes" | "yes" | "maybe" | "no")
-- summary (2-3 sentences)
-- primary_icp (string)
-- niche (string)
-- gtm_strategy (string)
-- best_channels (string array)
-- viral_potential (string)
-- brand_angle (string)
-- competitor_landscape (string)
+- summary (5-7 sentences — GTM headline, ICP, acquisition motion, retention loop, positioning, top risk, score rationale)
+- primary_icp (string, 2-4 sentences — who, where, job title/segment, why them first)
+- niche (string, 2-4 sentences)
+- gtm_strategy (string, 2-4 sentences — primary motion + first 90 days)
+- best_channels (string array, ranked with one-line rationale each)
+- viral_potential (string, 2-4 sentences)
+- brand_angle (string, 2-4 sentences)
+- competitor_landscape (string, 2-4 sentences)
 - recommendation (1 concrete action)
 - tags (array of {{label, type}} where type is "positive" | "negative" | "neutral")
 
@@ -392,14 +471,14 @@ def _dem_prompt(idea: str) -> str:
 Return JSON with these exact keys:
 - score (number 1-10)
 - verdict ("strong-yes" | "yes" | "maybe" | "no")
-- summary (2-3 sentences)
-- pain_severity (string)
-- problem_frequency (string)
-- willingness_to_pay (string)
-- timing (string)
-- trend_direction (string)
-- demand_signals (string array)
-- substitutes (string array)
+- summary (5-7 sentences — demand headline, JTBD, pain severity, WTP, timing, substitutes, score rationale)
+- pain_severity (string, 2-4 sentences — acute vs chronic, who hurts most, cost of inaction)
+- problem_frequency (string, 2-4 sentences)
+- willingness_to_pay (string, 2-4 sentences — price band, budget owner, substitutes cost)
+- timing (string, 2-4 sentences — why now, market readiness)
+- trend_direction (string, 2-4 sentences)
+- demand_signals (string array, 3-5 specific signals or validation steps)
+- substitutes (string array, 3-5 current workarounds)
 - recommendation (1 concrete action)
 - tags (array of {{label, type}} where type is "positive" | "negative" | "neutral")
 
@@ -443,13 +522,14 @@ AGENTS: list[AgentDefinition] = [
         name="Business CFO",
         icon="💼",
         color="var(--biz)",
-        model="meta-llama/llama-3.1-8b-instruct",
+        model="openai/gpt-4o-mini",
         system_prompt=BIZ_SYSTEM_PROMPT,
         build_prompt=_biz_prompt,
+        max_tokens=1400,
         fallback_models=(
             "mistralai/mistral-small-3.2-24b-instruct",
+            "meta-llama/llama-3.1-8b-instruct",
             "nvidia/nemotron-nano-9b-v2:free",
-            "openai/gpt-4o-mini",
         ),
     ),
     AgentDefinition(

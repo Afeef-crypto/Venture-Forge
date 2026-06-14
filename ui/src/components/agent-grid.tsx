@@ -65,7 +65,7 @@ export function AgentGrid({
             transition={{ delay: i * 0.08 }}
             className="border border-border bg-card p-5"
           >
-            <div className="flex items-start justify-between">
+            <div className="flex items-start">
               <span
                 className={`grid h-9 w-9 place-items-center rounded-full ${
                   i % 2 ? "bg-foreground text-background" : "bg-primary text-primary-foreground"
@@ -73,7 +73,6 @@ export function AgentGrid({
               >
                 <Icon className="h-4 w-4" />
               </span>
-              <span className="text-[10px] text-muted-foreground">{p}%</span>
             </div>
             <h3 className="mt-5 font-sans text-sm font-semibold">{agent.name}</h3>
             <p className="mt-1 text-xs text-muted-foreground">{status}</p>

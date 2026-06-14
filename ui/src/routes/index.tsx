@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BrainCircuit, Check, CircleDollarSign, Code2, Layers3, Megaphone, Search, Send, Sparkles, WalletCards, Zap } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Brand } from "@/components/brand";
 import { HeroPaperPlane } from "@/components/hero-paper-plane";
 import { ScoreRing } from "@/components/score-ring";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { consumeScrollToLandingHeroRequest, scrollToLandingHero } from "@/lib/scroll-to-hero";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,6 +23,12 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [sampleOpen, setSampleOpen] = useState(false);
+
+  useEffect(() => {
+    if (consumeScrollToLandingHeroRequest()) {
+      window.requestAnimationFrame(() => scrollToLandingHero());
+    }
+  }, []);
 
   const steps: Array<[typeof Send, string, string, string]> = [
     [Send, "01", "Submit Your Idea", "Describe your startup in a few lines. The more detail you give, the sharper the verdict."],
@@ -61,8 +68,9 @@ function Index() {
             </motion.div>
           </div>
           <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} className="flex gap-2">
-            <Button variant="ghost" size="sm" asChild><Link to="/dashboard">Dashboard</Link></Button>
-            <Button variant="hero" size="sm" className="btn-shine btn-pulse" asChild><Link to="/new-evaluation">Get Started</Link></Button>
+            <Button variant="hero" size="lg" className="btn-shine h-11 px-6 text-sm" asChild>
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
           </motion.div>
         </div>
       </nav>
@@ -97,9 +105,6 @@ function Index() {
                     <motion.span animate={{x:[0,4,0]}} transition={{repeat:Infinity,duration:1.5}} className="inline-flex"><ArrowRight/></motion.span>
                   </Link>
                 </Button>
-              </motion.div>
-              <motion.div whileHover={{scale:1.05,y:-2}} whileTap={{scale:.97}}>
-                <Button variant="outline" size="lg" className="btn-shine" onClick={()=>setSampleOpen(true)}>View Sample Report</Button>
               </motion.div>
             </motion.div>
             <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.8}} className="mt-12 flex items-center gap-6 text-[11px] text-muted-foreground">

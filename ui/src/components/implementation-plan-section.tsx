@@ -2,6 +2,7 @@ import { Copy, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlanCheckbox } from "@/components/plan-checkbox";
 import { copyTaskAsCursorPlan, domainLabel, type TechStackSummary } from "@/lib/evaluation-plan";
+import { buildLayeredTechStack, layeredStackSections } from "@/lib/plan-tech-stack";
 import { sprintPhaseLabel, sprintWeekRange } from "@/lib/plan-complexity";
 import type { CursorTask, DomainTasks, MvpRoadmapWeek } from "@/types/evaluation";
 
@@ -39,6 +40,8 @@ export function ImplementationPlanSection({
   if (tasks.length === 0) return null;
 
   const displaySprints = Array.from({ length: sprintCount }, (_, i) => i + 1);
+  const layeredStack = buildLayeredTechStack(techStack, tasks);
+  const stackSections = layeredStackSections(layeredStack);
 
   return (
     <section className={compact ? "" : "mt-2"}>
@@ -58,21 +61,37 @@ export function ImplementationPlanSection({
       )}
 
       {!compact && (
-        <div className="mb-6 rounded-lg border border-border bg-zinc-950 p-5 font-mono text-[11px] leading-6 text-zinc-100">
-          <p className="text-primary"># {title}</p>
-          <p className="mt-2 text-zinc-400">{ideaSummary}</p>
-          {techStack && techStack.recommended.length > 0 && (
-            <div className="mt-4 border-t border-zinc-800 pt-4">
-              <p className="text-zinc-300">## Recommended Stack</p>
-              {techStack.recommended.map((item) => (
-                <p key={item} className="text-zinc-400">
-                  - {item}
-                </p>
+        <div className="mb-8 min-h-[240px] rounded-xl border border-border bg-zinc-950 p-8 font-mono text-sm leading-7 text-zinc-100 sm:p-10 sm:text-[15px] sm:leading-8">
+          <p className="text-lg font-semibold text-primary"># {title}</p>
+          <p className="mt-3 text-base leading-7 text-zinc-300">{ideaSummary}</p>
+
+          <div className="mt-8 border-t border-zinc-800 pt-6">
+            <p className="text-base font-semibold text-zinc-100">## Required Tech Stack</p>
+            <div className="mt-5 grid gap-6 sm:grid-cols-2">
+              {stackSections.map((section) => (
+                <div key={section.label}>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-primary">### {section.label}</p>
+                  {section.note ? (
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">{section.note}</p>
+                  ) : (
+                    <ul className="mt-2 space-y-1.5">
+                      {section.items.map((item) => (
+                        <li key={item} className="text-sm text-zinc-300">
+                          - {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               ))}
-              {techStack.timeToMvp && <p className="text-zinc-500"># time_to_mvp: {techStack.timeToMvp}</p>}
-              {techStack.mvpComplexity && (
-                <p className="text-zinc-500"># complexity: {techStack.mvpComplexity}</p>
-              )}
+            </div>
+          </div>
+
+          {(techStack?.timeToMvp || techStack?.mvpComplexity || techStack?.summary) && (
+            <div className="mt-6 border-t border-zinc-800 pt-4 text-sm text-zinc-500">
+              {techStack?.timeToMvp && <p># time_to_mvp: {techStack.timeToMvp}</p>}
+              {techStack?.mvpComplexity && <p># complexity: {techStack.mvpComplexity}</p>}
+              {techStack?.summary && <p className="mt-2 leading-6 text-zinc-400">{techStack.summary}</p>}
             </div>
           )}
         </div>
