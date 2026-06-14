@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
-import { BarChart3, BriefcaseBusiness, Code2, Megaphone, Radar, Sparkles } from "lucide-react";
+import { BarChart3, BriefcaseBusiness, Code2, Megaphone, Radar } from "lucide-react";
+import { VentureForgeLogo } from "@/components/venture-forge-logo";
 import { EVALUATION_AGENTS, JUDGE_AGENT } from "@/config/agents";
 import type { AgentLiveState } from "@/types/evaluation";
 
-const icons = [BriefcaseBusiness, Code2, BarChart3, Megaphone, Radar, Sparkles];
+const icons = [BriefcaseBusiness, Code2, BarChart3, Megaphone, Radar] as const;
 
 type AgentGridProps = {
   progress?: number;
@@ -35,9 +36,9 @@ export function AgentGrid({
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map((agent, i) => {
-        const Icon = icons[i] ?? Sparkles;
-        const state = agentStates?.[agent.index];
+        const Icon = icons[i];
         const isJudge = agent.index === EVALUATION_AGENTS.length;
+        const state = agentStates?.[agent.index];
         const p = isJudge
           ? synthesizing
             ? 55
@@ -71,7 +72,7 @@ export function AgentGrid({
                   i % 2 ? "bg-foreground text-background" : "bg-primary text-primary-foreground"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                {isJudge ? <VentureForgeLogo variant="mark" size={18} title="" /> : Icon && <Icon className="h-4 w-4" />}
               </span>
             </div>
             <h3 className="mt-5 font-sans text-sm font-semibold">{agent.name}</h3>

@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BrainCircuit, Check, CircleDollarSign, Code2, Layers3, Megaphone, Search, Send, Sparkles, WalletCards, Zap } from "lucide-react";
+import { ArrowRight, BrainCircuit, Check, CircleDollarSign, Code2, Layers3, Megaphone, Search, Send, WalletCards, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Brand } from "@/components/brand";
 import { HeroPaperPlane } from "@/components/hero-paper-plane";
+import { VentureForgeLogo } from "@/components/venture-forge-logo";
 import { ScoreRing } from "@/components/score-ring";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -85,7 +86,7 @@ function Index() {
         <div className="relative mx-auto grid w-full max-w-[1600px] items-center gap-12 px-6 py-24 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:px-12 lg:py-32">
           <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{duration:.7}} className="relative z-10">
             <motion.div initial={{opacity:0,scale:.8}} animate={{opacity:1,scale:1}} transition={{delay:.2}} className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[.18em] text-primary">
-              <motion.span animate={{rotate:360}} transition={{repeat:Infinity,duration:4,ease:"linear"}}><Sparkles className="h-3.5 w-3.5"/></motion.span>
+              <motion.span animate={{rotate:360}} transition={{repeat:Infinity,duration:4,ease:"linear"}}><VentureForgeLogo size={14} title="" /></motion.span>
               AI-powered startup evaluation
             </motion.div>
             <h1 className="relative max-w-3xl text-5xl font-semibold leading-[1.02] tracking-tight sm:text-6xl lg:text-[5.5rem]">
@@ -111,7 +112,7 @@ function Index() {
             <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.8}} className="mt-12 flex items-center gap-6 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary"/>30s analysis</span>
               <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary"/>No card required</span>
-              <span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-primary"/>6 specialists</span>
+              <span className="flex items-center gap-1.5"><VentureForgeLogo variant="mark" size={14} className="text-primary" title="" />6 specialists</span>
             </motion.div>
           </motion.div>
 
