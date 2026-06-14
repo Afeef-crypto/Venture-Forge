@@ -51,6 +51,8 @@ class CursorTask(BaseModel):
     acceptance_criteria: list[str] = Field(default_factory=list)
     priority: Literal["P0", "P1", "P2"] = "P1"
     sprint: int = 1
+    tech_stack: list[str] = Field(default_factory=list)
+    implementation_steps: list[str] = Field(default_factory=list)
 
 
 class ScoreBreakdown(BaseModel):
@@ -92,6 +94,7 @@ class EvaluationReport(BaseModel):
     pivot_suggestions: list[PivotSuggestion] = Field(default_factory=list)
     domain_tasks: DomainTasks = Field(default_factory=DomainTasks)
     cursor_tasks: list[CursorTask] = Field(default_factory=list)
+    is_evaluable_venture: bool = True
 
 
 class EvaluateRequest(BaseModel):

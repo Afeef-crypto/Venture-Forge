@@ -15,15 +15,102 @@ IdeaCategory = Literal[
     "code_only",
     "homework",
     "empty_meaning",
+    "founder_docs",
+    "insufficient",
+    "irrelevant",
 ]
+
+# --- Venture substance (problem + product + customer) ---
+
+_PROBLEM_SIGNALS = re.compile(
+    r"\b("
+    r"problem|pain\s*point|struggle|frustrat|unmet\s+need|need\s+for|lack\s+of|"
+    r"challenge|bottleneck|inefficien|waste[s]?|difficult\s+to|hard\s+to|"
+    r"without\s+a\s+way\s+to|currently\s+have\s+to"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_SOLUTION_SIGNALS = re.compile(
+    r"\b("
+    r"we\s+(are\s+)?(building|making|creating|developing|launching)|"
+    r"our\s+(product|platform|app|service|tool|software|solution)|"
+    r"build(s|ing)?\s+a|platform\s+(that|helping)|app\s+(that|for)|mobile\s+app|web\s+app|"
+    r"tool\s+that|software\s+that|fintech\s+app|"
+    r"automate[s|d|ing]?|enable[s|d|ing]?|help(s|ing)?\s+\w+\s+(to|with|find)|"
+    r"mvp\b|prototype|saas|marketplace|uber\s+for|airbnb\s+for|on-?demand"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_CUSTOMER_SIGNALS = re.compile(
+    r"\b("
+    r"customers?|users?|buyers?|clients?|subscribers?|"
+    r"students|developers|devs|businesses|teams|professionals|"
+    r"owners|walkers|drivers|freelancers|consumers?|patients|"
+    r"target\s+(market|audience|customer|user)|icp\b|persona|"
+    r"b2b|b2c|indie\s+game|mid-?market|neighborhood"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_MARKET_SIGNALS = re.compile(
+    r"\b("
+    r"market|industry|sector|vertical|tam|sam|som|"
+    r"revenue|monetiz|pricing|subscription|go-?to-?market|gtm"
+    r")\b",
+    re.IGNORECASE,
+)
 
 _STARTUP_SIGNALS = re.compile(
     r"\b("
-    r"app|platform|saas|startup|product|mvp|marketplace|tool|service|software|"
-    r"subscription|founders?|customers?|users?|revenue|b2b|b2c|monetiz|freemium|"
-    r"api|mobile|web\s*app|on-?demand|fintech|healthtech|edtech|proptech|"
-    r"automate|analytics|pitch|venture|business\s+model|go-?to-?market|"
-    r"solve[sd]?|help(s|ing)?\s+\w+\s+(with|to)|uber\s+for|airbnb\s+for"
+    r"startup|venture|pitch|business\s+model|product-?market|"
+    r"freemium|on-?demand|fintech|healthtech|edtech|proptech|"
+    r"uber\s+for|airbnb\s+for"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_PRODUCT_DESCRIPTION = re.compile(
+    r"\b("
+    r"what\s+.*\s+company\s+going\s+to\s+make|product\s+description|"
+    r"describe\s+what\s+your\s+company|one\s+sentence\s+(explanation|description)|"
+    r"we\s+(are\s+)?(building|making|creating)|our\s+(product|platform|app)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# --- Non-venture / irrelevant document patterns ---
+
+_CAP_TABLE = re.compile(
+    r"\b("
+    r"equity\s+(allocation|split|structure|distribution)|cap\s*table|"
+    r"ownership\s+(split|percentage|structure)|founder\s+equity|vesting\s+schedule|"
+    r"percentage\s+of\s+equity|equity\s+stake|split\s+equity"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_IRRELEVANT_DOC = re.compile(
+    r"\b("
+    r"resume|curriculum\s+vitae|\bcv\b|cover\s+letter|"
+    r"dear\s+(sir|madam|hiring\s+manager)|job\s+description|"
+    r"terms\s+and\s+conditions|privacy\s+policy|legal\s+notice|"
+    r"invoice\s+#|receipt\s+for|purchase\s+order|"
+    r"meeting\s+minutes|agenda:|attendees:|"
+    r"chapter\s+\d+|abstract:|bibliography|"
+    r"ingredients:|preheat\s+oven|tablespoon|"
+    r"prescription|diagnosis|patient\s+history|"
+    r"unsubscribe\s+from|click\s+here\s+to\s+view\s+in\s+browser"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_FORM_ONLY = re.compile(
+    r"\b("
+    r"founder\s+name|email\s+address|phone\s+number|linkedin\s+url|"
+    r"date\s+of\s+birth|citizenship|work\s+authorization|"
+    r"how\s+did\s+you\s+hear\s+about|referr(ed|al)\s+by"
     r")\b",
     re.IGNORECASE,
 )
@@ -82,7 +169,6 @@ class IdeaClassification:
 
 
 def _gibberish_score(text: str) -> float:
-    """Return 0–1 likelihood that text is meaningless noise."""
     words = _WORD_RE.findall(text.lower())
     if not words:
         return 1.0
@@ -90,7 +176,6 @@ def _gibberish_score(text: str) -> float:
     if _LOREM_IPSUM.search(text) or _KEYBOARD_MASH.search(text):
         return 0.95
 
-    # Mostly consonant-heavy tokens typical of keyboard mashing
     consonant_heavy = sum(
         1 for w in words if len(w) >= 5 and not re.search(r"[aeiou]", w)
     ) / len(words)
@@ -100,11 +185,9 @@ def _gibberish_score(text: str) -> float:
     unique_ratio = len(set(words)) / len(words)
     avg_len = sum(len(w) for w in words) / len(words)
 
-    # Repeated keyboard mash or single-token spam
     if len(words) <= 3 and unique_ratio < 0.5:
         return 0.85
 
-    # Very low lexical diversity with no long words suggests noise
     if unique_ratio < 0.35 and avg_len < 5 and len(words) >= 4:
         return 0.8
 
@@ -115,16 +198,39 @@ def _gibberish_score(text: str) -> float:
     return 0.0
 
 
-def _has_startup_signals(text: str) -> bool:
-    return bool(_STARTUP_SIGNALS.search(text))
+def _venture_substance_score(text: str) -> int:
+    """Count how many venture dimensions are present (0–4)."""
+    score = 0
+    if _PROBLEM_SIGNALS.search(text):
+        score += 1
+    if _SOLUTION_SIGNALS.search(text):
+        score += 1
+    if _CUSTOMER_SIGNALS.search(text):
+        score += 1
+    if _MARKET_SIGNALS.search(text) or _PRODUCT_DESCRIPTION.search(text):
+        score += 1
+    return score
+
+
+def _word_count(text: str) -> int:
+    return len(_WORD_RE.findall(text))
+
+
+def _reject_insufficient(text: str, reason: str) -> IdeaClassification:
+    return IdeaClassification(
+        is_evaluable=False,
+        category="insufficient",
+        reason=reason,
+    )
 
 
 def classify_idea(text: str) -> IdeaClassification:
     """
     Classify user input before calling evaluators.
 
-    Conservative: only mark clearly non-ideas as invalid. Thin or vague pitches
-    still pass through so agents can score them low with guardrails.
+    Rejects anything that is clearly not a startup pitch or lacks enough
+    product/customer/problem substance. Thin but genuine one-liner pitches
+    may still pass with substance score >= 2, or 1 dimension in >= 20 words.
     """
     cleaned = (text or "").strip()
     if not cleaned:
@@ -134,21 +240,15 @@ def classify_idea(text: str) -> IdeaClassification:
             reason="Input is empty.",
         )
 
-    if _has_startup_signals(cleaned):
-        # Mixed jailbreak + real idea → let agents evaluate; guardrails ignore injection
-        if not _INSTRUCTION_PATTERNS.search(cleaned):
-            return IdeaClassification(
-                is_evaluable=True,
-                category="startup",
-                reason="Contains describable product or business signals.",
-            )
-        return IdeaClassification(
-            is_evaluable=True,
-            category="startup",
-            reason="Contains business signals; embedded instructions will be ignored by agents.",
-        )
+    words = _word_count(cleaned)
+    substance = _venture_substance_score(cleaned)
+    has_product = bool(
+        _SOLUTION_SIGNALS.search(cleaned) or _PRODUCT_DESCRIPTION.search(cleaned)
+    )
 
-    if _INSTRUCTION_PATTERNS.search(cleaned):
+    # --- Hard rejects: never evaluable ---
+
+    if _INSTRUCTION_PATTERNS.search(cleaned) and substance < 2 and not has_product:
         return IdeaClassification(
             is_evaluable=False,
             category="instruction",
@@ -162,7 +262,7 @@ def classify_idea(text: str) -> IdeaClassification:
             reason="Input is casual conversation, not a startup or product description.",
         )
 
-    if _HOMEWORK_PATTERNS.search(cleaned) and not _has_startup_signals(cleaned):
+    if _HOMEWORK_PATTERNS.search(cleaned) and substance < 2:
         return IdeaClassification(
             is_evaluable=False,
             category="homework",
@@ -170,8 +270,7 @@ def classify_idea(text: str) -> IdeaClassification:
         )
 
     code_matches = len(_CODE_HEAVY.findall(cleaned))
-    word_count = len(_WORD_RE.findall(cleaned))
-    if code_matches >= 2 or (code_matches >= 1 and word_count < 15):
+    if (code_matches >= 2 or (code_matches >= 1 and words < 15)) and substance < 2:
         return IdeaClassification(
             is_evaluable=False,
             category="code_only",
@@ -179,7 +278,7 @@ def classify_idea(text: str) -> IdeaClassification:
         )
 
     is_question = cleaned.endswith("?") or bool(_QUESTION_START.match(cleaned))
-    if is_question:
+    if is_question and substance < 2:
         return IdeaClassification(
             is_evaluable=False,
             category="question",
@@ -193,9 +292,82 @@ def classify_idea(text: str) -> IdeaClassification:
             reason="Input appears to be gibberish or placeholder text, not a business idea.",
         )
 
-    # Vague but might be a thin pitch — let agents decide
-    return IdeaClassification(
-        is_evaluable=True,
-        category="startup",
-        reason="No strong non-idea signals; defer to specialist evaluators.",
+    # --- Irrelevant document types ---
+
+    if _IRRELEVANT_DOC.search(cleaned) and substance < 2:
+        return IdeaClassification(
+            is_evaluable=False,
+            category="irrelevant",
+            reason="Input looks like a resume, legal text, recipe, or other document unrelated to a startup idea.",
+        )
+
+    if _CAP_TABLE.search(cleaned) and substance < 2:
+        return IdeaClassification(
+            is_evaluable=False,
+            category="founder_docs",
+            reason=(
+                "Input describes equity, ownership, or cap table details without a clear "
+                "product, customer, or problem — not an evaluable startup idea."
+            ),
+        )
+
+    # Application / form dumps: many metadata fields, no product substance
+    form_hits = len(_FORM_ONLY.findall(cleaned))
+    if form_hits >= 3 and substance < 2:
+        return _reject_insufficient(
+            cleaned,
+            "Input reads as application form metadata (names, contact info) without describing "
+            "what you are building, for whom, or what problem you solve.",
+        )
+
+    # Long documents that mention startup keywords but lack venture substance
+    if words >= 150 and substance < 2:
+        return _reject_insufficient(
+            cleaned,
+            "Document is long but lacks a clear product description, target customer, and problem statement.",
+        )
+
+    # Medium documents with weak substance
+    if words >= 60 and substance < 1:
+        return _reject_insufficient(
+            cleaned,
+            "Input does not describe a product, service, customer, or market — insufficient for evaluation.",
+        )
+
+    # Very short blurbs with no venture signals at all
+    if words < 12 and substance == 0 and not _STARTUP_SIGNALS.search(cleaned):
+        return _reject_insufficient(
+            cleaned,
+            "Input is too vague. Describe what you are building, who it is for, and what problem it solves.",
+        )
+
+    # --- Pass: enough substance for evaluation ---
+
+    if substance >= 2:
+        return IdeaClassification(
+            is_evaluable=True,
+            category="startup",
+            reason="Describes product, customer, and/or problem with enough detail to evaluate.",
+        )
+
+    # Thin one-liner with at least one clear dimension
+    if substance >= 1 and words >= 15:
+        return IdeaClassification(
+            is_evaluable=True,
+            category="startup",
+            reason="Thin pitch with some venture signals; specialist evaluators will assess further.",
+        )
+
+    # Explicit startup framing with minimal text
+    if substance >= 1 and words >= 12 and (_STARTUP_SIGNALS.search(cleaned) or has_product):
+        return IdeaClassification(
+            is_evaluable=True,
+            category="startup",
+            reason="Contains a describable product or venture concept.",
+        )
+
+    return _reject_insufficient(
+        cleaned,
+        "Input lacks sufficient relevance to a startup idea. Submit a pitch describing "
+        "what you are building, who the customer is, and what problem you solve.",
     )

@@ -82,8 +82,8 @@ JUDGE_GUARDRAILS = """
 - If agents conflict, acknowledge tension in executive_summary and critical_risk; do not silently average away disagreement.
 - osiris_verdict MUST match osiris_score tier rules exactly.
 - radar_scores must be consistent with agent scores (0–100 scale).
-- cursor_tasks must be concrete and legal — no tasks that violate ethics or law.
-- Minimum 8 cursor_tasks across domains; do not return an empty cursor_tasks array."""
+- cursor_tasks must be concrete and legal — no tasks that violate ethics or law. Each task must be specific to the evaluated startup product (reference product name and concrete features), not generic boilerplate like "improve UI". Every cursor_task MUST include tech_stack and implementation_steps arrays.
+- Minimum 10 cursor_tasks across all domains; mvp_roadmap must have 3–10 weeks (based on Tech Auditor mvp_complexity) with 4-6 elaborated tasks per week; cursor_tasks sprint values must align 1:1 with roadmap weeks; do not return empty arrays."""
 
 
 def compose_prompt(core: str, *agent_guardrails: str) -> str:

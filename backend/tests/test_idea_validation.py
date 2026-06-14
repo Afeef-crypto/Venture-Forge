@@ -41,6 +41,61 @@ def test_classify_valid_or_mixed_ideas(text: str):
     assert result.category == "startup"
 
 
+def test_yc_application_with_embedded_code_is_evaluable():
+    text = (
+        "Y Combinator Application: RoundtableCI (Summer 2026)\n"
+        "Company name: RoundtableCI\n"
+        "AI router that learns which model wins at what\n"
+        "What is your company going to make?\n"
+        "RoundtableCI routes each prompt to the best LLM by cost, latency, and quality.\n"
+        "Who are your users? Developers and AI teams building production apps.\n"
+        "import os\n"
+        "def route(prompt):\n"
+        "    return pick_model(prompt)\n"
+    )
+    result = classify_idea(text)
+    assert result.is_evaluable
+    assert result.category == "startup"
+
+
+def test_reject_equity_only_document():
+    text = (
+        "Founder equity split: Alice 40%, Bob 35%, Carol 25%. "
+        "Vesting schedule over 4 years with 1 year cliff. "
+        "Cap table attached for our startup RoundtableCI founders."
+    )
+    result = classify_idea(text)
+    assert not result.is_evaluable
+    assert result.category in ("founder_docs", "insufficient")
+
+
+def test_reject_application_form_without_product():
+    text = (
+        "Founder name: Jane Doe\nEmail address: jane@example.com\n"
+        "Phone number: 555-0100\nLinkedIn url: linkedin.com/in/jane\n"
+        "How did you hear about us: Twitter\nCitizenship: US\n"
+    )
+    result = classify_idea(text)
+    assert not result.is_evaluable
+    assert result.category in ("insufficient", "irrelevant")
+
+
+def test_reject_resume():
+    text = (
+        "John Smith — Resume\nExperience: Software Engineer at Acme Corp 2020-2024\n"
+        "Education: BS Computer Science\nSkills: Python, JavaScript"
+    )
+    result = classify_idea(text)
+    assert not result.is_evaluable
+    assert result.category == "irrelevant"
+
+
+def test_reject_vague_short_input():
+    result = classify_idea("hello world test")
+    assert not result.is_evaluable
+    assert result.category in ("insufficient", "chat")
+
+
 def test_non_idea_response_shape():
     classification = classify_idea("What is machine learning?")
     agents = build_non_idea_agent_results(classification)

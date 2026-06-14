@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,7 +22,6 @@ import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedNewEvaluationRouteImport } from './routes/_authenticated/new-evaluation'
 import { Route as AuthenticatedEvaluationsRouteImport } from './routes/_authenticated/evaluations'
-import { Route as AuthenticatedDocsRouteImport } from './routes/_authenticated/docs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedResultsIdRouteImport } from './routes/_authenticated/results.$id'
 import { Route as AuthenticatedEvaluationIdRouteImport } from './routes/_authenticated/evaluation.$id'
@@ -35,6 +35,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   id: '/robots.txt',
   path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -88,11 +93,6 @@ const AuthenticatedEvaluationsRoute =
     path: '/evaluations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDocsRoute = AuthenticatedDocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -118,10 +118,10 @@ const AuthenticatedAnalysisIdRoute = AuthenticatedAnalysisIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/docs': typeof DocsRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/docs': typeof AuthenticatedDocsRoute
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/new-evaluation': typeof AuthenticatedNewEvaluationRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -136,10 +136,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/docs': typeof DocsRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/docs': typeof AuthenticatedDocsRoute
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/new-evaluation': typeof AuthenticatedNewEvaluationRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -156,10 +156,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/docs': typeof DocsRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/docs': typeof AuthenticatedDocsRoute
   '/_authenticated/evaluations': typeof AuthenticatedEvaluationsRoute
   '/_authenticated/new-evaluation': typeof AuthenticatedNewEvaluationRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -176,10 +176,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/docs'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/dashboard'
-    | '/docs'
     | '/evaluations'
     | '/new-evaluation'
     | '/reports'
@@ -194,10 +194,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/docs'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/dashboard'
-    | '/docs'
     | '/evaluations'
     | '/new-evaluation'
     | '/reports'
@@ -213,10 +213,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/docs'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/_authenticated/dashboard'
-    | '/_authenticated/docs'
     | '/_authenticated/evaluations'
     | '/_authenticated/new-evaluation'
     | '/_authenticated/reports'
@@ -233,6 +233,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DocsRoute: typeof DocsRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
@@ -251,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/robots.txt'
       fullPath: '/robots.txt'
       preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -323,13 +331,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEvaluationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/docs': {
-      id: '/_authenticated/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof AuthenticatedDocsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -363,7 +364,6 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDocsRoute: typeof AuthenticatedDocsRoute
   AuthenticatedEvaluationsRoute: typeof AuthenticatedEvaluationsRoute
   AuthenticatedNewEvaluationRoute: typeof AuthenticatedNewEvaluationRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -378,7 +378,6 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDocsRoute: AuthenticatedDocsRoute,
   AuthenticatedEvaluationsRoute: AuthenticatedEvaluationsRoute,
   AuthenticatedNewEvaluationRoute: AuthenticatedNewEvaluationRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
@@ -398,9 +397,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DocsRoute: DocsRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

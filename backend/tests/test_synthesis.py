@@ -2,11 +2,8 @@ import pytest
 
 from agents.synthesis import fallback_report, normalize_report
 from models.schemas import AgentResult
-from utils.osiris_verdict import (
-    derive_osiris_score,
-    derive_radar_scores,
-    score_to_osiris_verdict,
-)
+from utils.osiris_verdict import derive_radar_scores, score_to_osiris_verdict
+from utils.venture_evaluable import judge_score_100
 
 
 def test_score_to_osiris_verdict_tiers():
@@ -56,6 +53,6 @@ def test_normalize_report_fills_defaults():
 def test_fallback_report_includes_osiris_fields():
     results = [AgentResult(score=5, verdict="maybe", summary="ok", recommendation="go")] * 5
     report = fallback_report("Test idea", results)
-    assert report.osiris_score == derive_osiris_score(report.scores)
+    assert report.osiris_score == judge_score_100(report.scores)
     assert report.osiris_verdict == score_to_osiris_verdict(report.osiris_score)
     assert report.radar_scores.tech == 50.0

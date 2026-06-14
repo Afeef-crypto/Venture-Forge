@@ -1,1 +1,108 @@
-import{createFileRoute}from"@tanstack/react-router";import{AppShell}from"@/components/app-shell";import{Clock}from"lucide-react";export const Route=createFileRoute("/_authenticated/roadmap")({component:Roadmap});function Roadmap(){const weeks=[["Week 1–2","Foundation",["Set up project and repository","Build authentication system","Create landing page"],"32 hrs"],["Week 3–4","Core Features",["Implement evaluation pipeline","Build AI orchestration engine","Create dashboard"],"48 hrs"],["Week 5–6","Polish & Beta",["Integrate live streaming","Add notifications","Performance optimization"],"36 hrs"],["Week 7–8","Launch",["Fix bugs and polish","Prepare launch assets","Go live"],"24 hrs"]];return <AppShell><h1 className="text-3xl">Recommended Roadmap</h1><p className="mt-2 text-xs text-muted-foreground">Step-by-step plan to build and launch your startup.</p><div className="relative mt-10 ml-3 border-l border-border pl-8">{weeks.map((w,i)=><article key={w[0] as string} className="relative mb-6 border border-border bg-card p-6"><span className="absolute -left-[2.55rem] top-7 h-4 w-4 rounded-full border-4 border-background bg-primary"/><div className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-primary">{w[0]}</p><h2 className="mt-1 text-xl">{w[1]}</h2></div><span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5"/>{w[3]}</span></div><ul className="mt-5 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">{(w[2] as string[]).map(x=><li key={x}>• {x}</li>)}</ul></article>)}</div></AppShell>}
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
+import { RoadmapSection } from "@/components/roadmap-section";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { listEvaluationPlans, type EvaluationPlan } from "@/lib/evaluation-plan";
+import { LOCAL_EVALUATIONS_EVENT } from "@/lib/local-evaluations";
+
+export const Route = createFileRoute("/_authenticated/roadmap")({ component: RoadmapPage });
+
+function RoadmapPage() {
+  const [plans, setPlans] = useState<EvaluationPlan[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+
+  useEffect(() => {
+    const load = () => {
+      const next = listEvaluationPlans();
+      setPlans(next);
+      setSelectedId((prev) => (prev && next.some((p) => p.id === prev) ? prev : next[0]?.id ?? ""));
+    };
+    load();
+    window.addEventListener(LOCAL_EVALUATIONS_EVENT, load);
+    return () => window.removeEventListener(LOCAL_EVALUATIONS_EVENT, load);
+  }, []);
+
+  const plan = plans.find((p) => p.id === selectedId) ?? plans[0];
+
+  return (
+    <AppShell>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl">Roadmap</h1>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Idea-specific MVP build plan from your latest evaluations.
+          </p>
+        </div>
+        <Button variant="hero" asChild>
+          <Link to="/new-evaluation">
+            <Plus />
+            New Evaluation
+          </Link>
+        </Button>
+      </div>
+
+      {plans.length > 0 ? (
+        <>
+          <div className="mt-8 max-w-md">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Select evaluation
+            </label>
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="Choose an idea" />
+              </SelectTrigger>
+              <SelectContent>
+                {plans.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {plan && (
+            <div className="mt-8">
+              <header className="mb-6 border border-border bg-card p-6">
+                <p className="text-[10px] uppercase tracking-wider text-primary">Building</p>
+                <h2 className="mt-1 text-2xl">{plan.title}</h2>
+                <p className="mt-3 text-xs leading-6 text-muted-foreground">{plan.ideaSummary}</p>
+                <Link
+                  to="/results/$id"
+                  params={{ id: plan.id }}
+                  search={{ tab: "Roadmap" }}
+                  className="mt-4 inline-block text-xs text-primary story-link"
+                >
+                  Open full report
+                </Link>
+              </header>
+              <RoadmapSection
+                evaluationId={plan.id}
+                title={plan.title}
+                roadmap={plan.mvpRoadmap}
+                weekCount={plan.weekCount}
+                complexityLabel={plan.complexityLabel}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="mt-10 border border-border bg-card p-10 text-center">
+          <p className="text-sm text-muted-foreground">Complete an evaluation to generate an idea-specific roadmap.</p>
+          <Button variant="hero" className="mt-5" asChild>
+            <Link to="/new-evaluation">Start evaluation</Link>
+          </Button>
+        </div>
+      )}
+    </AppShell>
+  );
+}

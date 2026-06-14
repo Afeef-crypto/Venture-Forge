@@ -22,6 +22,15 @@ _CATEGORY_HINTS: dict[str, str] = {
     "code_only": "Describe the business concept and target user — not raw code alone.",
     "homework": "Academic assignments are out of scope. Paste a venture or MVP description instead.",
     "empty_meaning": "Input cannot be empty.",
+    "founder_docs": (
+        "Describe the product and target customer — not only equity splits or founder allocation."
+    ),
+    "insufficient": (
+        "Add what you are building, who the customer is, and what problem you solve."
+    ),
+    "irrelevant": (
+        "Submit a startup or product pitch — not resumes, legal docs, or unrelated content."
+    ),
 }
 
 
@@ -86,4 +95,5 @@ def build_non_idea_report(idea: str, classification: IdeaClassification) -> Eval
         ),
         pivot_suggestions=[],
         cursor_tasks=[],
+        is_evaluable_venture=False,
     )

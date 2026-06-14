@@ -428,13 +428,13 @@ AGENTS: list[AgentDefinition] = [
         name="Tech Auditor",
         icon="⚙️",
         color="var(--tech)",
-        model="nvidia/nemotron-nano-9b-v2:free",
+        model="openai/gpt-4o-mini",
         system_prompt=TECH_SYSTEM_PROMPT,
         build_prompt=_tech_prompt,
         fallback_models=(
             "meta-llama/llama-3.1-8b-instruct",
             "qwen/qwen-2.5-7b-instruct",
-            "openai/gpt-4o-mini",
+            "google/gemini-2.0-flash-001",
         ),
     ),
     AgentDefinition(

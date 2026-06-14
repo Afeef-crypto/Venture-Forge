@@ -240,3 +240,121 @@
 
 @keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
 .bob { animation: bob 3s ease-in-out infinite; }
+
+/* === Hero paper plane === */
+.hero-plane {
+  color: color-mix(in oklab, var(--foreground) 48%, transparent);
+}
+.hero-plane-float {
+  margin-left: 4%;
+  margin-top: -44px;
+}
+.hero-plane-scene {
+  position: relative;
+  display: flex;
+  width: min(480px, 96vw);
+  isolation: isolate;
+}
+@media (min-width: 1024px) {
+  .hero-plane-scene {
+    width: min(640px, 100%);
+  }
+}
+.hero-plane-glow {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  z-index: 0;
+  height: 85%;
+  width: 55%;
+  border-radius: 9999px;
+  transform: translate(-40%, -50%);
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--primary) 30%, transparent) 0%,
+    color-mix(in oklab, var(--primary) 14%, transparent) 44%,
+    transparent 74%
+  );
+  animation: hero-glow-pulse 6s ease-in-out infinite;
+}
+.hero-plane-fx {
+  color: color-mix(in oklab, var(--foreground) 72%, transparent);
+}
+.hero-plane-fx-back {
+  z-index: 1;
+  inset: 0;
+  color: color-mix(in oklab, var(--foreground) 28%, transparent);
+}
+.hero-plane-fx-front {
+  z-index: 3;
+  inset: 0;
+}
+.hero-plane-image {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 32px 56px color-mix(in oklab, var(--primary) 24%, transparent));
+  user-select: none;
+}
+.hero-arc-group {
+  transform-origin: 340px 168px;
+}
+.hero-arc {
+  opacity: 0.38;
+  transform-origin: 340px 168px;
+}
+.hero-arc-a { animation: hero-arc-spin 56s linear infinite; }
+.hero-arc-b { animation: hero-arc-spin 72s linear infinite reverse; opacity: 0.24; }
+.hero-arc-c { animation: hero-arc-spin 88s linear infinite; opacity: 0.16; }
+.hero-arc-d { animation: hero-arc-spin 104s linear infinite reverse; opacity: 0.1; }
+.hero-trail-path {
+  opacity: 0.88;
+  animation: hero-trail-flow 4s linear infinite;
+}
+.hero-motion-group {
+  transform-origin: 416px 296px;
+}
+.hero-motion-tick {
+  opacity: 0.75;
+  animation: hero-motion-pulse 2.2s ease-in-out infinite;
+}
+.hero-motion-1 { animation-delay: 0s; }
+.hero-motion-2 { animation-delay: 0.15s; }
+.hero-motion-3 { animation-delay: 0.3s; }
+.hero-motion-4 { animation-delay: 0.08s; }
+.hero-motion-5 { animation-delay: 0.22s; }
+.hero-motion-6 { animation-delay: 0.36s; }
+.hero-speed-group {
+  transform-origin: 416px 296px;
+}
+.hero-speed-line {
+  opacity: 0;
+  stroke-dasharray: 14 10;
+  animation: hero-speed-streak 1.4s ease-out infinite;
+}
+.hero-speed-1 { animation-delay: 0s; }
+.hero-speed-2 { animation-delay: 0.12s; }
+.hero-speed-3 { animation-delay: 0.24s; }
+
+@keyframes hero-glow-pulse {
+  0%, 100% { transform: translate(-40%, -50%) scale(1); opacity: 0.9; }
+  50% { transform: translate(-40%, -50%) scale(1.06); opacity: 1; }
+}
+@keyframes hero-arc-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes hero-trail-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -32; }
+}
+@keyframes hero-motion-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+@keyframes hero-speed-streak {
+  0% { opacity: 0; stroke-dashoffset: 0; }
+  20% { opacity: 0.9; }
+  100% { opacity: 0; stroke-dashoffset: -48; }
+}

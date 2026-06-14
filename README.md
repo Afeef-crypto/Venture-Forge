@@ -22,7 +22,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  React frontend (Vite)          http://localhost:5173     │
+│  React frontend (Vite)          http://localhost:8086     │
 │  · Idea input + demo presets                            │
 │  · Live agent status pills (SSE)                        │
 │  · Score summary + agent cards + synthesis report       │
@@ -136,7 +136,7 @@ Each evaluator has **fallback models** (e.g. `gpt-4o-mini`, `nemotron-free`). If
 │   └── tasks/
 │       └── sprints.md            # Sprint tracker
 │
-├── docker-compose.yml            # Backend :8000 + frontend :5173
+├── docker-compose.yml            # Backend :8000 + frontend :8086
 ├── .env.example                  # Root env reference
 ├── .gitignore
 └── README.md
@@ -199,7 +199,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). Vite proxies `/api` to the backend — no `VITE_API_URL` needed locally.
+Open [http://localhost:8086](http://localhost:8086). Vite proxies `/api` to the backend — no `VITE_API_URL` needed locally.
 
 ---
 
@@ -280,7 +280,7 @@ docker compose up --build
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:5173 |
+| Frontend | http://localhost:8086 |
 | Backend | http://localhost:8000 |
 
 ---

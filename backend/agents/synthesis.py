@@ -21,6 +21,12 @@ from utils.osiris_verdict import (
     score_to_osiris_verdict,
 )
 from utils.parse_json import parse_json
+from utils.venture_evaluable import (
+    finalize_report,
+    scores_from_agents,
+    average_agent_score_10,
+    judge_score_100,
+)
 
 SYNTHESIS_MODEL = "anthropic/claude-sonnet-4-6"
 SYNTHESIS_FALLBACK_MODELS = (
@@ -37,7 +43,8 @@ _JUDGE_CORE_PROMPT = (
     "Compute osiris_score (0-100) and map to osiris_verdict: Divine Potential (90-100), "
     "Venture Ready (75-89), Promising but Risky (60-74), Needs Refinement (40-59), Reconsider (<40). "
     "Populate radar_scores (market, demand, tech, finance, execution), demand_validation, "
-    "and minimum 8 cursor_tasks across all domains."
+    "an idea-specific 3-week MVP roadmap with elaborated weekly tasks, "
+    "and minimum 10 implementation tasks (cursor_tasks) across all domains."
 )
 
 SYNTHESIS_SYSTEM_PROMPT = compose_prompt(_JUDGE_CORE_PROMPT, JUDGE_GUARDRAILS)
@@ -51,8 +58,13 @@ Synthesize them into one authoritative Osiris Evaluation Report.
 
 Original Idea: "{idea}"
 
+IMPORTANT — input may be a long application or document. Extract the CORE PRODUCT (name, problem, solution, key features).
+Never paste or echo the full document in roadmap, domain_tasks, or cursor_tasks.
+Reference the product by name and build concrete plans for its actual features.
+
 YC Evaluator ({yc.score}/10): {yc.model_dump_json()}
 Tech Auditor ({tech.score}/10): {tech.model_dump_json()}
+Use Tech Auditor recommended_stack and time_to_mvp when assigning tech_stack on cursor_tasks.
 Business CFO ({biz.score}/10): {biz.model_dump_json()}
 Marketing ({mkt.score}/10): {mkt.model_dump_json()}
 Demand Intel ({dem.score}/10): {dem.model_dump_json()}
@@ -81,39 +93,35 @@ Respond ONLY in valid JSON with this EvaluationReport schema:
     "pain_point_severity": string (how acute is the problem?),
     "willingness_to_pay": string (will customers pay, and how much?)
   }},
-  "mvp_roadmap": [{{ "week": number, "title": string, "deliverable": string, "tasks": string[] }}] (exactly 3 weeks),
+  "mvp_roadmap": [{{ "week": number, "title": string (must reference the specific startup product by name), "deliverable": string (2-3 sentences — concrete measurable outcome), "tasks": string[] }}] (3 to 10 weeks inclusive — choose week count from Tech Auditor mvp_complexity: low=3-4, medium=5-7, high=8-10; 4-6 elaborated tasks per week),
   "pivot_suggestions": [{{ "title": string, "rationale": string }}],
   "domain_tasks": {{
-    "frontend": string[], "backend": string[], "ai_ml": string[],
-    "design": string[], "marketing": string[], "business": string[]
+    "frontend": string[] (3-5 elaborated bullets for THIS idea),
+    "backend": string[],
+    "ai_ml": string[],
+    "design": string[],
+    "marketing": string[],
+    "business": string[]
   }},
   "cursor_tasks": [{{
     "id": string (e.g. "FE-001", "BE-002"),
     "domain": string ("frontend"|"backend"|"ai_ml"|"design"|"marketing"|"business"),
-    "title": string,
-    "description": string,
-    "acceptance_criteria": string[] (2-4 items),
+    "title": string (specific feature for THIS product),
+    "description": string (2-4 sentences: what to build, why for THIS product, approach),
+    "tech_stack": string[] (libraries/frameworks/services for this task — align with Tech Auditor stack),
+    "implementation_steps": string[] (4-8 checkbox-ready steps; include file paths, routes, tables, or components),
+    "acceptance_criteria": string[] (3-5 testable criteria),
     "priority": "P0"|"P1"|"P2",
-    "sprint": number (1, 2, or 3)
-  }}] (minimum 8 tasks)
+    "sprint": number (1 to N where N equals mvp_roadmap week count — align sprint number with roadmap week)
+  }}] (minimum 10 tasks; each must name concrete modules — no generic "improve UI" without specifics)
 }}
 
 No markdown fences. No extra text."""
 
 
 def normalize_report(parsed: dict, results: list[AgentResult]) -> EvaluationReport:
-    scores_raw = parsed.get("scores") or {}
-    scores = ScoreBreakdown(
-        yc=float(scores_raw.get("yc", results[0].score if results else 0)),
-        tech=float(scores_raw.get("tech", results[1].score if len(results) > 1 else 0)),
-        biz=float(scores_raw.get("biz", results[2].score if len(results) > 2 else 0)),
-        mkt=float(scores_raw.get("mkt", results[3].score if len(results) > 3 else 0)),
-        demand=float(scores_raw.get("demand", results[4].score if len(results) > 4 else 0)),
-    )
-
-    overall = parsed.get("overall_score")
-    if not isinstance(overall, (int, float)):
-        overall = (scores.yc + scores.tech + scores.biz + scores.mkt + scores.demand) / 5
+    scores = scores_from_agents(results)
+    overall = average_agent_score_10(scores)
 
     domain_raw = parsed.get("domain_tasks") or {}
     domain_tasks = DomainTasks(
@@ -137,6 +145,8 @@ def normalize_report(parsed: dict, results: list[AgentResult]) -> EvaluationRepo
                     acceptance_criteria=list(item.get("acceptance_criteria") or []),
                     priority=item.get("priority", "P1"),  # type: ignore[arg-type]
                     sprint=int(item.get("sprint", 1)),
+                    tech_stack=list(item.get("tech_stack") or []),
+                    implementation_steps=list(item.get("implementation_steps") or []),
                 )
             )
 
@@ -164,21 +174,11 @@ def normalize_report(parsed: dict, results: list[AgentResult]) -> EvaluationRepo
 
     overall_verdict = str(parsed.get("overall_verdict") or "maybe")
 
-    radar_raw = parsed.get("radar_scores") or {}
     derived_radar = derive_radar_scores(scores)
-    radar = RadarScores(
-        market=float(radar_raw.get("market") or derived_radar.market),
-        demand=float(radar_raw.get("demand") or derived_radar.demand),
-        tech=float(radar_raw.get("tech") or derived_radar.tech),
-        finance=float(radar_raw.get("finance") or derived_radar.finance),
-        execution=float(radar_raw.get("execution") or derived_radar.execution),
-    )
+    radar = derived_radar
 
-    osiris_score = parsed.get("osiris_score")
-    if not isinstance(osiris_score, (int, float)):
-        osiris_score = derive_osiris_score(scores, radar)
-
-    osiris_verdict = str(parsed.get("osiris_verdict") or score_to_osiris_verdict(float(osiris_score)))
+    osiris_score = judge_score_100(scores)
+    osiris_verdict = score_to_osiris_verdict(osiris_score)
 
     demand_raw = parsed.get("demand_validation") or {}
     dem_result = results[4] if len(results) > 4 else None
@@ -221,21 +221,16 @@ def normalize_report(parsed: dict, results: list[AgentResult]) -> EvaluationRepo
         pivot_suggestions=pivot_suggestions,
         domain_tasks=domain_tasks,
         cursor_tasks=cursor_tasks,
+        is_evaluable_venture=True,
     )
 
 
 def fallback_report(idea: str, results: list[AgentResult]) -> EvaluationReport:
-    scores = ScoreBreakdown(
-        yc=results[0].score if results else 0,
-        tech=results[1].score if len(results) > 1 else 0,
-        biz=results[2].score if len(results) > 2 else 0,
-        mkt=results[3].score if len(results) > 3 else 0,
-        demand=results[4].score if len(results) > 4 else 0,
-    )
-    avg = (scores.yc + scores.tech + scores.biz + scores.mkt + scores.demand) / 5
+    scores = scores_from_agents(results)
+    avg = average_agent_score_10(scores)
     verdict = "yes" if avg >= 7 else "maybe" if avg >= 5 else "no"
     radar = derive_radar_scores(scores)
-    osiris_score = derive_osiris_score(scores, radar)
+    osiris_score = judge_score_100(scores)
     osiris_verdict = score_to_osiris_verdict(osiris_score)
     dem = results[4] if len(results) > 4 else None
 
@@ -272,7 +267,7 @@ async def run_synthesis(idea: str, results: list[AgentResult]) -> EvaluationRepo
 
     api_keys = settings.get_synthesis_api_keys_to_try()
     if not api_keys:
-        return fallback_report(idea, results)
+        return finalize_report(fallback_report(idea, results), results)
 
     prompt = build_synthesis_prompt(idea, results)
     models = [SYNTHESIS_MODEL, *SYNTHESIS_FALLBACK_MODELS]
@@ -288,7 +283,7 @@ async def run_synthesis(idea: str, results: list[AgentResult]) -> EvaluationRepo
                         system_prompt=SYNTHESIS_SYSTEM_PROMPT,
                         user_prompt=prompt,
                         temperature=0.3,
-                        max_tokens=2000,
+                        max_tokens=4096,
                     )
                     if http_error:
                         if any(c in http_error for c in ("401", "402", "404", "429")):
@@ -297,6 +292,6 @@ async def run_synthesis(idea: str, results: list[AgentResult]) -> EvaluationRepo
 
                     parsed = parse_json(raw or "")
                     if parsed:
-                        return normalize_report(parsed, results)
+                        return finalize_report(normalize_report(parsed, results), results)
 
-    return fallback_report(idea, results)
+    return finalize_report(fallback_report(idea, results), results)

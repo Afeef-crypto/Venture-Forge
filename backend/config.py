@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     openrouter_key_dem: str = ""
     openrouter_key_synthesis: str = ""
 
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:8086,http://127.0.0.1:8086"
     rate_limit_seconds: int = 30
     export_dir: str = ""
 
