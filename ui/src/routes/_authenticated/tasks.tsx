@@ -17,6 +17,7 @@ import {
   type EvaluationPlan,
 } from "@/lib/evaluation-plan";
 import { LOCAL_EVALUATIONS_EVENT } from "@/lib/local-evaluations";
+import { DEFAULT_NEW_EVALUATION_SEARCH } from "@/lib/new-evaluation-search";
 
 export const Route = createFileRoute("/_authenticated/tasks")({ component: ImplementationPlanPage });
 
@@ -64,7 +65,7 @@ function ImplementationPlanPage() {
             </Button>
           )}
           <Button variant="hero" asChild>
-            <Link to="/new-evaluation">
+            <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>
               <Plus />
               New Evaluation
             </Link>
@@ -125,7 +126,7 @@ function ImplementationPlanPage() {
         <div className="mt-10 border border-border bg-card p-10 text-center">
           <p className="text-sm text-muted-foreground">Complete an evaluation to generate a development plan.</p>
           <Button variant="hero" className="mt-5" asChild>
-            <Link to="/new-evaluation">Start evaluation</Link>
+            <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>Start evaluation</Link>
           </Button>
         </div>
       )}

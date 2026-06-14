@@ -8,6 +8,7 @@ import { ScoreRing } from "@/components/score-ring";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { consumeScrollToLandingHeroRequest, scrollToLandingHero } from "@/lib/scroll-to-hero";
+import { DEFAULT_NEW_EVALUATION_SEARCH } from "@/lib/new-evaluation-search";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -100,7 +101,7 @@ function Index() {
             <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.55}} className="mt-10 flex flex-wrap gap-4">
               <motion.div whileHover={{scale:1.05,y:-2}} whileTap={{scale:.97}}>
                 <Button variant="hero" size="lg" className="btn-shine btn-pulse group" asChild>
-                  <Link to="/new-evaluation">
+                  <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>
                     Evaluate My Startup
                     <motion.span animate={{x:[0,4,0]}} transition={{repeat:Infinity,duration:1.5}} className="inline-flex"><ArrowRight/></motion.span>
                   </Link>
@@ -221,7 +222,7 @@ function Index() {
         </div>
       </footer>
 
-      <Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle className="font-display text-2xl">AI Study Companion — Sample Report</DialogTitle><DialogDescription>Six-agent investor-readiness analysis</DialogDescription></DialogHeader><div className="grid gap-5 sm:grid-cols-[auto_1fr]"><ScoreRing score={87}/><div><h3 className="font-sans font-semibold">Strong Potential</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A compelling student productivity product with a clear audience and credible freemium path. Focus the MVP on retention and prove learning outcomes before expanding.</p></div></div><div className="flex flex-wrap gap-2"><Button variant="hero" asChild><Link to="/new-evaluation">Evaluate your idea</Link></Button><Button variant="outline" asChild><Link to="/results/$id" params={{ id: "demo-study-companion" }}>View full demo report</Link></Button></div></DialogContent></Dialog>
+      <Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle className="font-display text-2xl">AI Study Companion — Sample Report</DialogTitle><DialogDescription>Six-agent investor-readiness analysis</DialogDescription></DialogHeader><div className="grid gap-5 sm:grid-cols-[auto_1fr]"><ScoreRing score={87}/><div><h3 className="font-sans font-semibold">Strong Potential</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A compelling student productivity product with a clear audience and credible freemium path. Focus the MVP on retention and prove learning outcomes before expanding.</p></div></div><div className="flex flex-wrap gap-2"><Button variant="hero" asChild><Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>Evaluate your idea</Link></Button><Button variant="outline" asChild><Link to="/results/$id" params={{ id: "demo-study-companion" }}>View full demo report</Link></Button></div></DialogContent></Dialog>
     </main>
   );
 }

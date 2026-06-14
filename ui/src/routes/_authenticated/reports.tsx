@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { listEvaluations, LOCAL_EVALUATIONS_EVENT, type LocalEvaluation } from "@/lib/local-evaluations";
 import { resolveEvaluationDisplay } from "@/lib/evaluation-display";
+import { DEFAULT_NEW_EVALUATION_SEARCH } from "@/lib/new-evaluation-search";
 
 export const Route = createFileRoute("/_authenticated/reports")({ component: Reports });
 
@@ -162,7 +163,7 @@ function Reports() {
               <p className="text-sm font-medium">No completed reports yet</p>
               <p className="mt-2 text-xs text-muted-foreground">Run an evaluation to generate your first report.</p>
               <Button variant="hero" size="sm" className="mt-5" asChild>
-                <Link to="/new-evaluation">New Evaluation</Link>
+                <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>New Evaluation</Link>
               </Button>
             </div>
           )}

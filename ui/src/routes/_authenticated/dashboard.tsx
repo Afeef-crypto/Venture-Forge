@@ -15,6 +15,7 @@ import {
   type LocalEvaluation,
 } from "@/lib/local-evaluations";
 import { resolveEvaluationDisplay } from "@/lib/evaluation-display";
+import { DEFAULT_NEW_EVALUATION_SEARCH } from "@/lib/new-evaluation-search";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({ component: Dashboard });
 
@@ -97,7 +98,7 @@ function Dashboard() {
         </div>
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
           <Button variant="hero" className="btn-shine btn-pulse" asChild>
-            <Link to="/new-evaluation">
+            <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>
               <Plus />
               New Evaluation
             </Link>
