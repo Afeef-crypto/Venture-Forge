@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BrainCircuit, Check, CircleDollarSign, Code2, Layers3, Megaphone, Search, Send, Sparkles, WalletCards, Zap } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, BrainCircuit, Check, CircleDollarSign, Code2, Layers3, Megaphone, Search, Send, WalletCards, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Brand } from "@/components/brand";
 import { HeroPaperPlane } from "@/components/hero-paper-plane";
+import { VentureForgeLogo } from "@/components/venture-forge-logo";
 import { ScoreRing } from "@/components/score-ring";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { consumeScrollToLandingHeroRequest, scrollToLandingHero } from "@/lib/scroll-to-hero";
+import { DEFAULT_NEW_EVALUATION_SEARCH } from "@/lib/new-evaluation-search";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,6 +25,12 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [sampleOpen, setSampleOpen] = useState(false);
+
+  useEffect(() => {
+    if (consumeScrollToLandingHeroRequest()) {
+      window.requestAnimationFrame(() => scrollToLandingHero());
+    }
+  }, []);
 
   const steps: Array<[typeof Send, string, string, string]> = [
     [Send, "01", "Submit Your Idea", "Describe your startup in a few lines. The more detail you give, the sharper the verdict."],
@@ -61,8 +70,9 @@ function Index() {
             </motion.div>
           </div>
           <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} className="flex gap-2">
-            <Button variant="ghost" size="sm" asChild><Link to="/dashboard">Dashboard</Link></Button>
-            <Button variant="hero" size="sm" className="btn-shine btn-pulse" asChild><Link to="/new-evaluation">Get Started</Link></Button>
+            <Button variant="hero" size="lg" className="btn-shine h-11 px-6 text-sm" asChild>
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
           </motion.div>
         </div>
       </nav>
@@ -76,7 +86,7 @@ function Index() {
         <div className="relative mx-auto grid w-full max-w-[1600px] items-center gap-12 px-6 py-24 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:px-12 lg:py-32">
           <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{duration:.7}} className="relative z-10">
             <motion.div initial={{opacity:0,scale:.8}} animate={{opacity:1,scale:1}} transition={{delay:.2}} className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[.18em] text-primary">
-              <motion.span animate={{rotate:360}} transition={{repeat:Infinity,duration:4,ease:"linear"}}><Sparkles className="h-3.5 w-3.5"/></motion.span>
+              <motion.span animate={{rotate:360}} transition={{repeat:Infinity,duration:4,ease:"linear"}}><VentureForgeLogo size={14} title="" /></motion.span>
               AI-powered startup evaluation
             </motion.div>
             <h1 className="relative max-w-3xl text-5xl font-semibold leading-[1.02] tracking-tight sm:text-6xl lg:text-[5.5rem]">
@@ -92,20 +102,17 @@ function Index() {
             <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.55}} className="mt-10 flex flex-wrap gap-4">
               <motion.div whileHover={{scale:1.05,y:-2}} whileTap={{scale:.97}}>
                 <Button variant="hero" size="lg" className="btn-shine btn-pulse group" asChild>
-                  <Link to="/new-evaluation">
+                  <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>
                     Evaluate My Startup
                     <motion.span animate={{x:[0,4,0]}} transition={{repeat:Infinity,duration:1.5}} className="inline-flex"><ArrowRight/></motion.span>
                   </Link>
                 </Button>
               </motion.div>
-              <motion.div whileHover={{scale:1.05,y:-2}} whileTap={{scale:.97}}>
-                <Button variant="outline" size="lg" className="btn-shine" onClick={()=>setSampleOpen(true)}>View Sample Report</Button>
-              </motion.div>
             </motion.div>
             <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.8}} className="mt-12 flex items-center gap-6 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary"/>30s analysis</span>
               <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary"/>No card required</span>
-              <span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-primary"/>6 specialists</span>
+              <span className="flex items-center gap-1.5"><VentureForgeLogo variant="mark" size={14} className="text-primary" title="" />6 specialists</span>
             </motion.div>
           </motion.div>
 
@@ -216,7 +223,7 @@ function Index() {
         </div>
       </footer>
 
-      <Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle className="font-display text-2xl">AI Study Companion — Sample Report</DialogTitle><DialogDescription>Six-agent investor-readiness analysis</DialogDescription></DialogHeader><div className="grid gap-5 sm:grid-cols-[auto_1fr]"><ScoreRing score={87}/><div><h3 className="font-sans font-semibold">Strong Potential</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A compelling student productivity product with a clear audience and credible freemium path. Focus the MVP on retention and prove learning outcomes before expanding.</p></div></div><div className="flex flex-wrap gap-2"><Button variant="hero" asChild><Link to="/new-evaluation">Evaluate your idea</Link></Button><Button variant="outline" asChild><Link to="/results/$id" params={{ id: "demo-study-companion" }}>View full demo report</Link></Button></div></DialogContent></Dialog>
+      <Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle className="font-display text-2xl">AI Study Companion — Sample Report</DialogTitle><DialogDescription>Six-agent investor-readiness analysis</DialogDescription></DialogHeader><div className="grid gap-5 sm:grid-cols-[auto_1fr]"><ScoreRing score={87}/><div><h3 className="font-sans font-semibold">Strong Potential</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A compelling student productivity product with a clear audience and credible freemium path. Focus the MVP on retention and prove learning outcomes before expanding.</p></div></div><div className="flex flex-wrap gap-2"><Button variant="hero" asChild><Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>Evaluate your idea</Link></Button><Button variant="outline" asChild><Link to="/results/$id" params={{ id: "demo-study-companion" }}>View full demo report</Link></Button></div></DialogContent></Dialog>
     </main>
   );
 }

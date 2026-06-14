@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Copy, Download, Eye, FileText, Search, SlidersHorizontal } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ScoreRing } from "@/components/score-ring";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { listEvaluations, LOCAL_EVALUATIONS_EVENT, type LocalEvaluation } from "@/lib/local-evaluations";
 import { resolveEvaluationDisplay } from "@/lib/evaluation-display";
+import { DEFAULT_NEW_EVALUATION_SEARCH } from "@/lib/new-evaluation-search";
 
 export const Route = createFileRoute("/_authenticated/reports")({ component: Reports });
 
@@ -49,7 +51,7 @@ function Reports() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <h1 className="text-3xl">All Evaluations</h1>
@@ -75,15 +77,15 @@ function Reports() {
           </div>
         </div>
 
-        <div className="mt-8 overflow-x-auto border border-border bg-card">
-          <table className="w-full min-w-[760px] text-left text-xs">
-            <thead className="border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground">
+        <div className="mt-8 overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
+          <table className="w-full min-w-[900px] text-left text-sm">
+            <thead className="border-b border-border bg-muted/30 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="p-4">Idea</th>
-                <th>Overall Score</th>
-                <th>Status</th>
-                <th>Completed</th>
-                <th className="pr-4 text-right">Actions</th>
+                <th className="px-6 py-5 text-left">Idea</th>
+                <th className="px-4 py-5 text-left">Overall Score</th>
+                <th className="px-4 py-5 text-left">Status</th>
+                <th className="px-4 py-5 text-left">Completed</th>
+                <th className="px-6 py-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -91,30 +93,31 @@ function Reports() {
                 const display = resolveEvaluationDisplay(row);
                 return (
                 <tr key={row.id} className="group border-b border-border transition-colors last:border-0 hover:bg-muted/40">
-                  <td className="p-4">
+                  <td className="px-6 py-5">
                     <Link to="/results/$id" params={{ id: row.id }} className="block">
-                      <b>
+                      <b className="text-base font-semibold">
                         {row.title}
-                        {row.isDemo && <span className="ml-2 text-[9px] font-normal text-muted-foreground">(demo)</span>}
+                        {row.isDemo && <span className="ml-2 text-xs font-normal text-muted-foreground">(demo)</span>}
                       </b>
-                      <p className="mt-1 max-w-sm truncate text-[10px] text-muted-foreground">{row.idea}</p>
+                      <p className="mt-2 max-w-md truncate text-sm leading-5 text-muted-foreground">{row.idea}</p>
                     </Link>
                   </td>
-                  <td>
-                    <Link to="/results/$id" params={{ id: row.id }} className="flex items-center gap-2">
-                      <span className="grid h-9 w-9 place-items-center rounded-full border border-primary/30 font-semibold">
-                        {display.overallScore ?? "—"}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground">/100</span>
+                  <td className="px-4 py-5">
+                    <Link to="/results/$id" params={{ id: row.id }} className="inline-flex">
+                      {display.overallScore != null ? (
+                        <ScoreRing score={display.overallScore} size="md" />
+                      ) : (
+                        <span className="grid h-12 w-12 place-items-center text-sm text-muted-foreground">—</span>
+                      )}
                     </Link>
                   </td>
-                  <td>
-                    <Link to="/results/$id" params={{ id: row.id }} className="text-success">
+                  <td className="px-4 py-5">
+                    <Link to="/results/$id" params={{ id: row.id }} className="text-sm font-medium text-success">
                       ● Completed
                     </Link>
                   </td>
-                  <td>
-                    <Link to="/results/$id" params={{ id: row.id }} className="text-muted-foreground">
+                  <td className="px-4 py-5">
+                    <Link to="/results/$id" params={{ id: row.id }} className="text-sm text-muted-foreground">
                       {new Date(row.updated_at).toLocaleString([], {
                         month: "short",
                         day: "numeric",
@@ -124,9 +127,9 @@ function Reports() {
                       })}
                     </Link>
                   </td>
-                  <td>
-                    <div className="flex justify-end gap-1 pr-3">
-                      <Button variant="ghost" size="icon" asChild>
+                  <td className="px-6 py-5">
+                    <div className="flex justify-end gap-1.5">
+                      <Button variant="ghost" size="icon" className="h-10 w-10" asChild>
                         <Link to="/results/$id" params={{ id: row.id }} aria-label={`Open ${row.title} report`}>
                           <FileText />
                         </Link>
@@ -134,15 +137,16 @@ function Reports() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-10 w-10"
                         onClick={() => navigator.clipboard.writeText(JSON.stringify(row.report, null, 2))}
                         aria-label={`Copy ${row.title}`}
                       >
                         <Copy />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => exportReport(row)} aria-label={`Download ${row.title}`}>
+                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => exportReport(row)} aria-label={`Download ${row.title}`}>
                         <Download />
                       </Button>
-                      <Button variant="ghost" size="icon" asChild>
+                      <Button variant="ghost" size="icon" className="h-10 w-10" asChild>
                         <Link to="/results/$id" params={{ id: row.id }} aria-label={`View ${row.title}`}>
                           <Eye />
                         </Link>
@@ -159,7 +163,7 @@ function Reports() {
               <p className="text-sm font-medium">No completed reports yet</p>
               <p className="mt-2 text-xs text-muted-foreground">Run an evaluation to generate your first report.</p>
               <Button variant="hero" size="sm" className="mt-5" asChild>
-                <Link to="/new-evaluation">New Evaluation</Link>
+                <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>New Evaluation</Link>
               </Button>
             </div>
           )}

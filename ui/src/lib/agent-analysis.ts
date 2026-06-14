@@ -7,7 +7,29 @@ export interface AnalysisBlock {
 }
 
 function label(key: string): string {
-  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const overrides: Record<string, string> = {
+    estimated_cac: "Estimated CAC",
+    ltv_potential: "LTV Potential",
+    initial_investment: "Initial Investment",
+    monthly_burn: "Monthly Burn",
+    break_even: "Break-Even",
+    funding_strategy: "Funding Strategy",
+    revenue_model: "Revenue Model",
+    mvp_complexity: "MVP Complexity",
+    time_to_mvp: "Time to MVP",
+    primary_icp: "Primary ICP",
+    gtm_strategy: "GTM Strategy",
+    viral_potential: "Viral Potential",
+    brand_angle: "Brand Angle",
+    competitor_landscape: "Competitive Landscape",
+    pain_severity: "Pain Severity",
+    problem_frequency: "Problem Frequency",
+    willingness_to_pay: "Willingness to Pay",
+    trend_direction: "Trend Direction",
+    yc_fit: "YC Fit",
+    market_size: "Market Size",
+  };
+  return overrides[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function asString(value: unknown): string | null {

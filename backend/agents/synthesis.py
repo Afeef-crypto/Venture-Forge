@@ -75,7 +75,7 @@ Respond ONLY in valid JSON with this EvaluationReport schema:
   "overall_verdict": string ("strong-yes" | "yes" | "maybe" | "no"),
   "osiris_score": number (0-100 composite venture score),
   "osiris_verdict": string — MUST be one of: "Divine Potential" (90-100), "Venture Ready" (75-89), "Promising but Risky" (60-74), "Needs Refinement" (40-59), "Reconsider" (<40),
-  "executive_summary": string (4-5 sentences),
+  "executive_summary": string (5-7 sentences — synthesize agent findings, resolve conflicts, state verdict rationale),
   "investor_hook": string (one punchy line),
   "biggest_strength": string,
   "critical_risk": string,

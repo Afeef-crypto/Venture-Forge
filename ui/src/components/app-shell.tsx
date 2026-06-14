@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { FileStack, Home, LayoutTemplate, ListTodo, Map, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Brand } from "./brand";
@@ -15,7 +15,6 @@ const links = [
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,9 +50,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <Button variant="hero" size="sm" className="w-full" onClick={() => navigate({ to: "/new-evaluation" })}>
-          New Evaluation
-        </Button>
       </aside>
       <div className="md:pl-56">
         <div className="min-h-screen p-5 pt-20 sm:p-8 md:p-10">{children}</div>

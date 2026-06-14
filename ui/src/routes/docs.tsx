@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { DOCS_SECTIONS } from "@/content/docs-sections";
+import { DEFAULT_NEW_EVALUATION_SEARCH } from "@/lib/new-evaluation-search";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docs")({
@@ -47,7 +48,7 @@ function DocsPage() {
               <Link to="/dashboard">Dashboard</Link>
             </Button>
             <Button variant="hero" size="sm" className="btn-shine" asChild>
-              <Link to="/new-evaluation">
+              <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>
                 Get Started
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -67,7 +68,7 @@ function DocsPage() {
             Everything you need to evaluate an idea, understand the six-agent report and move from insight to execution.
           </p>
           <Button variant="hero" className="mt-7" asChild>
-            <Link to="/new-evaluation">
+            <Link to="/new-evaluation" search={DEFAULT_NEW_EVALUATION_SEARCH}>
               Start an evaluation
               <ArrowRight className="h-4 w-4" />
             </Link>

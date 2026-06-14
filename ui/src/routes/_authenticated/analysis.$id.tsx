@@ -87,14 +87,6 @@ function Analysis() {
               </div>
             </div>
           </section>
-          <div className="mt-5 border-l-2 border-primary bg-accent p-5 text-xs">
-            <b>Recommendation</b>
-            <p className="mt-2 text-muted-foreground">
-              {active.recommendation ||
-                active.recommendations[0] ||
-                "Proceed with a focused MVP and validate the critical assumption before expanding scope."}
-            </p>
-          </div>
         </>
       )}
     </AppShell>

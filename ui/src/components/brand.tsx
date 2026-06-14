@@ -1,5 +1,25 @@
-import { Sparkles } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { requestScrollToLandingHero, scrollToLandingHero } from "@/lib/scroll-to-hero";
+import { VentureForgeLogo } from "@/components/venture-forge-logo";
 
 export function Brand() {
-  return <div className="flex items-center gap-2 font-semibold tracking-[0.18em]"><span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground"><Sparkles className="h-4 w-4" /></span><span>VENTURE FORGE</span></div>;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  return (
+    <Link
+      to="/"
+      onClick={() => {
+        if (pathname === "/") {
+          scrollToLandingHero();
+        } else {
+          requestScrollToLandingHero();
+        }
+      }}
+      className="flex items-center gap-2.5 font-sans font-semibold tracking-[0.18em] transition-opacity hover:opacity-80"
+      aria-label="Venture Forge — back to home"
+    >
+      <VentureForgeLogo size={28} />
+      <span>VENTURE FORGE</span>
+    </Link>
+  );
 }

@@ -115,7 +115,7 @@ function Results() {
                 <ScoreRing score={report.overallScore} />
                 <div>
                   <p className="text-xs text-muted-foreground">Overall Score</p>
-                  <b className="text-primary">{report.verdict}</b>
+                  <b className="font-sans text-primary">{report.verdict}</b>
                 </div>
               </div>
               <div>
@@ -318,14 +318,6 @@ function Results() {
                 </div>
               </div>
             </section>
-            <div className="mt-5 border-l-2 border-primary bg-accent p-5 text-xs">
-              <b>Recommendation</b>
-              <p className="mt-2 text-muted-foreground">
-                {activeAgent.recommendation ||
-                  activeAgent.recommendations[0] ||
-                  "Proceed with a focused MVP and validate the critical assumption before expanding scope."}
-              </p>
-            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
