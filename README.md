@@ -1,4 +1,4 @@
-# Osiris
+# Venture Forge
 
 **Multi-agent startup idea evaluator** — five specialist AI agents score your MVP in parallel, then a sixth agent synthesizes an investor-ready report with roadmap and Cursor-ready tasks.
 
