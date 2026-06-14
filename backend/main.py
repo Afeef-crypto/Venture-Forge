@@ -26,6 +26,14 @@ from utils.file_handler import save_upload
 from utils.idea_validation import classify_idea
 from utils.non_idea_response import build_non_idea_agent_results, build_non_idea_report
 from utils.workspace_file import read_workspace_pitch_file
+from models.pdf_schemas import PDFExportRequest
+from utils.pdf_generator import generate_evaluation_pdf
+from fastapi.responses import Response
+from models.chart_schemas import (
+    IndustryComparisonResponse,
+    AgentScoresResponse,
+)
+
 
 app = FastAPI(
     title="Osiris API",
@@ -209,4 +217,78 @@ async def evaluate_stream(request: Request, body: EvaluateRequest):
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
+    )
+@app.post(
+    "/api/export-pdf/{evaluation_id}",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "Returns the evaluation report as a downloadable PDF.",
+        },
+        422: {"description": "Invalid request body."},
+        500: {"description": "PDF generation failed."},
+    },
+    summary="Export evaluation report as PDF",
+    tags=["Export"],
+)
+async def export_evaluation_pdf(
+    evaluation_id: str,
+    body: PDFExportRequest,
+) -> Response:
+    try:
+        pdf_bytes = generate_evaluation_pdf(body)
+
+        safe_name = "".join(
+            c if c.isalnum() or c in "-_ " else "_"
+            for c in body.startup_name
+        ).strip().replace(" ", "_")[:60]
+
+        date_str = body.evaluation_date.strftime("%Y-%m-%d")
+        filename = f"VentureForge_{safe_name}_{date_str}.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "X-Evaluation-Id": evaluation_id,
+            },
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"PDF generation failed: {exc!s}",
+        )
+@app.get(
+    "/api/charts/industry-comparison",
+    response_model=IndustryComparisonResponse,
+    tags=["Charts"]
+)
+async def industry_comparison_chart():
+    return IndustryComparisonResponse(
+        technology=62,
+        fintech=58,
+        healthcare=55,
+        marketplace=60,
+        edtech=53,
+        startup_score=80
+    )    
+
+@app.get(
+    "/api/charts/agent-scores",
+    response_model=AgentScoresResponse,
+    tags=["Charts"]
+)
+async def agent_scores_chart():
+    return AgentScoresResponse(
+        yc_partner=75,
+        tech_auditor=82,
+        business_cfo=65,
+        marketing_expert=80,
+        demand_intel=72,
+        judge=78
     )
